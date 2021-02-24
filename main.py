@@ -39,8 +39,8 @@ if sentence[-1] in operators:
     print('Last char is operator')
     exit(1)
 
-numbers_in_sentence = clean_numbers(sentence, numbers, operators)
 operators_in_sentence = clean_operators(sentence, operators, numbers)
+numbers_in_sentence = clean_numbers(sentence, numbers, operators)
 
 if sentence[0] not in operators:
     operators_in_sentence = ['+'] + operators_in_sentence
