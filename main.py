@@ -57,14 +57,14 @@ class Tokenizer:
                 i += 1
                 continue
             else:
-                exit(1)
+                raise ValueError()
             i += 1
         self.actual = token
         self.position = i+1
         return token
 
 class Parser:
-
+    
     tokens: Tokenizer
 
     def __init__(self, code: str):
@@ -78,6 +78,8 @@ class Parser:
         total = 0
         i = 0
         actual = tokens[i]
+        if actual.tokenType != TokenTypes.NUMBER or tokens[-2] != TokenTypes.NUMBER:
+            raise BufferError()
         while i < len(tokens) - 1:
             nextToken = tokens[i+1]
             if nextToken.tokenType == actual.tokenType or (actual.tokenType in [TokenTypes.PLUS, TokenTypes.MINUS] and nextToken.tokenType in [TokenTypes.PLUS, TokenTypes.MINUS]):
