@@ -78,7 +78,7 @@ class Parser:
         total = 0
         i = 0
         actual = tokens[i]
-        if actual.tokenType != TokenTypes.NUMBER or tokens[-2] != TokenTypes.NUMBER:
+        if actual.tokenType != TokenTypes.NUMBER or tokens[-2].tokenType != TokenTypes.NUMBER:
             raise BufferError()
         while i < len(tokens) - 1:
             nextToken = tokens[i+1]
