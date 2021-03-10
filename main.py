@@ -7,6 +7,9 @@ class TokenTypes(Enum):
     EOF = 2
     PLUS = 3
     MINUS = 4
+    MULTIPLIER = 5
+    DIVIDER = 6
+    COMMENT = 7
 
 class Token:
 
@@ -42,6 +45,12 @@ class Tokenizer:
             elif char == '-':
                 token = Token(TokenTypes.MINUS, 1)
                 break
+            elif char == '/':
+                token = Token(TokenTypes.DIVIDER, 1)
+                break
+            elif char == '*':
+                token = Token(TokenTypes.MULTIPLIER, 1)
+                break
             elif char.isdigit():
                 temp = char
                 if i < len(self.origin) - 1:
@@ -55,10 +64,8 @@ class Tokenizer:
                 break
             elif char == " ":
                 i += 1
-                continue
             else:
                 raise ValueError()
-            i += 1
         self.actual = token
         self.position = i+1
         return token
@@ -66,34 +73,43 @@ class Tokenizer:
 class Parser:
     
     tokens: Tokenizer
+    levelZeroTokens = [TokenTypes.PLUS, TokenTypes.MINUS]
+    levelOneTokens = [TokenTypes.MULTIPLIER, TokenTypes.DIVIDER]
 
     def __init__(self, code: str):
         self.tokens = Tokenizer(code)
 
     def main(self):
-        return self.__parseExpression(self.__run(self.tokens))
+        return self.parseExpression()
 
-    @staticmethod
-    def __parseExpression(tokens: List[Token]) -> int:
-        total = 0
-        i = 0
-        actual = tokens[i]
-        if actual.tokenType != TokenTypes.NUMBER or tokens[-2].tokenType != TokenTypes.NUMBER:
-            raise BufferError()
-        while i < len(tokens) - 1:
-            nextToken = tokens[i+1]
-            if nextToken.tokenType == actual.tokenType or (actual.tokenType in [TokenTypes.PLUS, TokenTypes.MINUS] and nextToken.tokenType in [TokenTypes.PLUS, TokenTypes.MINUS]):
-                raise BufferError()
+    def parseExpression(self) -> int:
+        total = self.parseMultDiv()
+        actual = self.tokens.actual
+        while actual.tokenType in self.levelZeroTokens:
+            if actual.tokenType == TokenTypes.MINUS:
+                total -= self.parseMultDiv()
             elif actual.tokenType == TokenTypes.PLUS:
-                total += nextToken.value
-            elif actual.tokenType == TokenTypes.MINUS:
-                total -= nextToken.value
-            elif actual.tokenType == TokenTypes.NUMBER and i == 0:
-                total += actual.value
-            actual = nextToken
-            i += 1
-        if tokens[-1].tokenType != TokenTypes.EOF:
-            raise EOFError()
+                total += self.parseMultDiv()
+            actual = self.tokens.actual
+        return total
+    
+    def parseMultDiv(self) -> int:
+        actual = self.tokens.selectNext()
+        if actual.tokenType != TokenTypes.NUMBER:
+            raise BufferError()
+        total = actual.value
+        actual = self.tokens.selectNext()
+        while actual.tokenType in self.levelOneTokens:
+            if actual.tokenType == TokenTypes.DIVIDER:
+                actual = self.tokens.selectNext()
+                if actual.tokenType == TokenTypes.NUMBER:
+                    total /= actual.value
+                actual = self.tokens.selectNext()
+            elif actual.tokenType == TokenTypes.MULTIPLIER:
+                actual = self.tokens.selectNext()
+                if actual.tokenType == TokenTypes.NUMBER:
+                    total *= actual.value
+                actual = self.tokens.selectNext()
         return total
 
     @staticmethod
@@ -104,7 +120,9 @@ class Parser:
             validTokens.append(tokens.selectNext())
         return validTokens
 
+if __name__ == "__main__":
+    sentence = sys.argv[1].strip()
+    parser = Parser(sentence)
+    # parser = Parser('4+3*5')
+    print(parser.main())
 
-sentence = sys.argv[1].strip()
-parser = Parser(sentence)
-print(parser.main())
