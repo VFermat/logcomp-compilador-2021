@@ -1,19 +1,14 @@
 all: valid invalid
 
 valid:
-	-python3 main.py "1"
-	-python3 main.py "1+1"
-	-python3 main.py "1+1-1"
-	-python3 main.py "1-1"
-	-python3 main.py "1-2"
-	-python3 main.py "1  -2"
-	-python3 main.py "1-   2"
-	-python3 main.py "1   -   2"
-	-python3 main.py "1   -   2+1"
+	-python3 main.py "/* a */ 1 /* b */"
+	-python3 main.py "3-2"
+	-python3 main.py "11+22-33 /* a */"
+	-python3 main.py "4/2+3"
+	-python3 main.py "3+4/2"
+	-python3 main.py "2 + 3 */* a */5"
 
 invalid:
-	-python3 main.py "1+"
-	-python3 main.py "+34"
-	-python3 main.py "19 1283"
-	-python3 main.py "15++"
-	-python3 main.py "!"
+	-python3 main.py "3+ /* a */"
+	-python3 main.py "/* a */"
+	-python3 main.py "3- 3 /* a"
