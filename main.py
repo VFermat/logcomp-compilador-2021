@@ -9,7 +9,6 @@ class TokenTypes(Enum):
     MINUS = 4
     MULTIPLIER = 5
     DIVIDER = 6
-    COMMENT = 7
 
 class PrePro:
 
@@ -132,8 +131,6 @@ class Parser:
 
 if __name__ == "__main__":
     sentence = sys.argv[1]
-    # sentence = "/* a */ 1 /* b */"
     parser = Parser(sentence)
-    # parser = Parser('4+3*5')
     print(parser.main())
 
