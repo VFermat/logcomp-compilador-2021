@@ -7,6 +7,22 @@ class TokenTypes(Enum):
     EOF = 2
     PLUS = 3
     MINUS = 4
+    MULTIPLIER = 5
+    DIVIDER = 6
+
+class PrePro:
+
+    def filter(self, text: str) -> str:
+        text = text.strip()
+        position: int = text.find("/*")
+        while position != -1:
+            end_position: int = text[position:].find("*/")
+            if end_position:
+                text = text[:position] + text[position+end_position+2:]
+            else:
+                raise ValueError()
+            position = text.find("/*")
+        return text.strip()
 
 class Token:
 
@@ -42,6 +58,12 @@ class Tokenizer:
             elif char == '-':
                 token = Token(TokenTypes.MINUS, 1)
                 break
+            elif char == '/':
+                token = Token(TokenTypes.DIVIDER, 1)
+                break
+            elif char == '*':
+                token = Token(TokenTypes.MULTIPLIER, 1)
+                break
             elif char.isdigit():
                 temp = char
                 if i < len(self.origin) - 1:
@@ -55,10 +77,8 @@ class Tokenizer:
                 break
             elif char == " ":
                 i += 1
-                continue
             else:
                 raise ValueError()
-            i += 1
         self.actual = token
         self.position = i+1
         return token
@@ -66,45 +86,51 @@ class Tokenizer:
 class Parser:
     
     tokens: Tokenizer
+    levelZeroTokens = [TokenTypes.PLUS, TokenTypes.MINUS]
+    levelOneTokens = [TokenTypes.MULTIPLIER, TokenTypes.DIVIDER]
 
     def __init__(self, code: str):
+        prepro = PrePro()
+        code = prepro.filter(code)
         self.tokens = Tokenizer(code)
 
     def main(self):
-        return self.__parseExpression(self.__run(self.tokens))
+        return self.parseExpression()
 
-    @staticmethod
-    def __parseExpression(tokens: List[Token]) -> int:
-        total = 0
-        i = 0
-        actual = tokens[i]
-        if actual.tokenType != TokenTypes.NUMBER or tokens[-2].tokenType != TokenTypes.NUMBER:
+    def parseExpression(self) -> int:
+        total = self.parseMultDiv()
+        while self.tokens.actual.tokenType in self.levelZeroTokens:
+            if self.tokens.actual.tokenType == TokenTypes.MINUS:
+                total -= self.parseMultDiv()
+            elif self.tokens.actual.tokenType == TokenTypes.PLUS:
+                total += self.parseMultDiv()
+        return total
+    
+    def parseMultDiv(self) -> int:
+        self.tokens.selectNext()
+        if self.tokens.actual.tokenType != TokenTypes.NUMBER:
             raise BufferError()
-        while i < len(tokens) - 1:
-            nextToken = tokens[i+1]
-            if nextToken.tokenType == actual.tokenType or (actual.tokenType in [TokenTypes.PLUS, TokenTypes.MINUS] and nextToken.tokenType in [TokenTypes.PLUS, TokenTypes.MINUS]):
-                raise BufferError()
-            elif actual.tokenType == TokenTypes.PLUS:
-                total += nextToken.value
-            elif actual.tokenType == TokenTypes.MINUS:
-                total -= nextToken.value
-            elif actual.tokenType == TokenTypes.NUMBER and i == 0:
-                total += actual.value
-            actual = nextToken
-            i += 1
-        if tokens[-1].tokenType != TokenTypes.EOF:
-            raise EOFError()
+        total = self.tokens.actual.value
+        self.tokens.selectNext()
+        while self.tokens.actual.tokenType in self.levelOneTokens:
+            if self.tokens.actual.tokenType == TokenTypes.DIVIDER:
+                self.tokens.selectNext()
+                if self.tokens.actual.tokenType == TokenTypes.NUMBER:
+                    total /= self.tokens.actual.value
+                self.tokens.selectNext()
+            elif self.tokens.actual.tokenType == TokenTypes.MULTIPLIER:
+                self.tokens.selectNext()
+                if self.tokens.actual.tokenType == TokenTypes.NUMBER:
+                    total *= self.tokens.actual.value
+                self.tokens.selectNext()
         return total
 
     @staticmethod
     def __run(tokens: Tokenizer):
-        validTokens = []
-        validTokens.append(tokens.selectNext())
-        while tokens.actual.tokenType != TokenTypes.EOF:
-            validTokens.append(tokens.selectNext())
-        return validTokens
+        raise NotImplementedError
 
+if __name__ == "__main__":
+    sentence = sys.argv[1]
+    parser = Parser(sentence)
+    print(parser.main())
 
-sentence = sys.argv[1].strip()
-parser = Parser(sentence)
-print(parser.main())
