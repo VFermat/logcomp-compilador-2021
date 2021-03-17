@@ -114,11 +114,12 @@ class Parser:
 
     def parseTerm(self) -> int:
         total = self.parseFactor()
+        self.tokens.selectNext()
         while self.tokens.actual.tokenType in self.levelOneTokens:
             if self.tokens.actual.tokenType == TokenTypes.DIVIDER:
                 self.tokens.selectNext()
                 if self.tokens.actual.tokenType == TokenTypes.NUMBER:
-                    total //= self.tokens.actual.value
+                    total = int(total // self.tokens.actual.value)
                 elif self.tokens.actual.tokenType in self.levelOneTokens:
                     raise BufferError("Dupla operação com Divisor")
                 self.tokens.selectNext()
@@ -148,7 +149,6 @@ class Parser:
             total = self.parseExpression()
         else:
             raise BufferError(f"Invalid token type on factor. {self.tokens.actual.tokenType}")
-        self.tokens.selectNext()
         return total
 
     def run(self):
@@ -160,8 +160,8 @@ class Parser:
         return total
 
 if __name__ == "__main__":
-    sentence = sys.argv[1]
-    # sentence = "4/(1+1)*2"
+    # sentence = sys.argv[1]
+    sentence = "3 - -2/4"
     parser = Parser(sentence)
     print(parser.run())
 
