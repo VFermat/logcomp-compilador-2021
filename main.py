@@ -118,7 +118,7 @@ class Parser:
             if self.tokens.actual.tokenType == TokenTypes.DIVIDER:
                 self.tokens.selectNext()
                 if self.tokens.actual.tokenType == TokenTypes.NUMBER:
-                    total /= self.tokens.actual.value
+                    total //= self.tokens.actual.value
                 else:
                     raise BufferError("Dupla operação com divisor")
                 self.tokens.selectNext()
