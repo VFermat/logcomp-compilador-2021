@@ -104,6 +104,8 @@ class Parser:
                 total -= self.parseMultDiv()
             elif self.tokens.actual.tokenType == TokenTypes.PLUS:
                 total += self.parseMultDiv()
+        if self.tokens.actual.tokenType != TokenTypes.EOF:
+            raise EOFError()
         return total
     
     def parseMultDiv(self) -> int:
@@ -116,12 +118,16 @@ class Parser:
             if self.tokens.actual.tokenType == TokenTypes.DIVIDER:
                 self.tokens.selectNext()
                 if self.tokens.actual.tokenType == TokenTypes.NUMBER:
-                    total /= self.tokens.actual.value
+                    total //= self.tokens.actual.value
+                else:
+                    raise BufferError("Dupla operação com divisor")
                 self.tokens.selectNext()
             elif self.tokens.actual.tokenType == TokenTypes.MULTIPLIER:
                 self.tokens.selectNext()
                 if self.tokens.actual.tokenType == TokenTypes.NUMBER:
                     total *= self.tokens.actual.value
+                else:
+                    raise BufferError("Dupla operação com multiplicador")
                 self.tokens.selectNext()
         return total
 
