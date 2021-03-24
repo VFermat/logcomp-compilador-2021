@@ -120,6 +120,7 @@ class Parser:
                 total = total // self.parseFactor()
             elif self.tokens.actual.tokenType == TokenTypes.MULTIPLIER:
                 total *= self.parseFactor()
+            self.tokens.selectNext()
         return total
     
     def parseFactor(self) -> int:
@@ -132,7 +133,7 @@ class Parser:
         elif self.tokens.actual.tokenType == TokenTypes.PLUS:
             total += self.parseFactor()
         elif self.tokens.actual.tokenType == TokenTypes.RPAR:
-            self.openPars -= 1
+            raise ValueError()
         elif self.tokens.actual.tokenType == TokenTypes.LPAR:
             self.openPars += 1
             total = self.parseExpression()
@@ -146,11 +147,13 @@ class Parser:
         total = self.parseExpression()
         if self.openPars != 0:
             raise BufferError("Parenteses fechados não correspondem aos abertos")
+        if self.tokens.actual.tokenType != TokenTypes.EOF:
+            raise EOFError()
         return total
 
 if __name__ == "__main__":
     sentence = sys.argv[1]
-    # sentence = "(3+1)*(3+1)"
+    # sentence = "3+2)"
     parser = Parser(sentence)
     print(parser.run())
 
