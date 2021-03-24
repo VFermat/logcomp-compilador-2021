@@ -117,19 +117,10 @@ class Parser:
         self.tokens.selectNext()
         while self.tokens.actual.tokenType in self.levelOneTokens:
             if self.tokens.actual.tokenType == TokenTypes.DIVIDER:
-                self.tokens.selectNext()
-                if self.tokens.actual.tokenType == TokenTypes.NUMBER:
-                    total = int(total // self.tokens.actual.value)
-                elif self.tokens.actual.tokenType in self.levelOneTokens:
-                    raise BufferError("Dupla operação com Divisor")
-                self.tokens.selectNext()
+                total = total // self.parseFactor()
             elif self.tokens.actual.tokenType == TokenTypes.MULTIPLIER:
-                self.tokens.selectNext()
-                if self.tokens.actual.tokenType == TokenTypes.NUMBER:
-                    total *= self.tokens.actual.value
-                elif self.tokens.actual.tokenType in self.levelOneTokens:
-                    raise BufferError("Dupla operação com multiplicador")
-                self.tokens.selectNext()
+                total *= self.parseFactor()
+            self.tokens.selectNext()
         return total
     
     def parseFactor(self) -> int:
@@ -142,11 +133,12 @@ class Parser:
         elif self.tokens.actual.tokenType == TokenTypes.PLUS:
             total += self.parseFactor()
         elif self.tokens.actual.tokenType == TokenTypes.RPAR:
-            self.openPars -= 1
-            total = 0
+            raise ValueError()
         elif self.tokens.actual.tokenType == TokenTypes.LPAR:
             self.openPars += 1
             total = self.parseExpression()
+            if self.tokens.actual.tokenType == TokenTypes.RPAR:
+                self.openPars -= 1
         else:
             raise BufferError(f"Invalid token type on factor. {self.tokens.actual.tokenType}")
         return total
@@ -156,12 +148,12 @@ class Parser:
         if self.openPars != 0:
             raise BufferError("Parenteses fechados não correspondem aos abertos")
         if self.tokens.actual.tokenType != TokenTypes.EOF:
-            raise EOFError("Missing EOF")
+            raise EOFError()
         return total
 
 if __name__ == "__main__":
-    # sentence = sys.argv[1]
-    sentence = "3 - -2/4"
+    sentence = sys.argv[1]
+    # sentence = "3+2)"
     parser = Parser(sentence)
     print(parser.run())
 
