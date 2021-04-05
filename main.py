@@ -1,16 +1,8 @@
 import sys
 from typing import List
 from enum import Enum
-
-class TokenTypes(Enum):
-    NUMBER = 1
-    EOF = 2
-    PLUS = 3
-    MINUS = 4
-    MULTIPLIER = 5
-    DIVIDER = 6
-    LPAR = 7
-    RPAR = 8
+from tokens import Token, TokenTypes
+from nodes import BinOp, UnOp, IntVal, NoOp, Node
 
 class PrePro:
 
@@ -19,21 +11,12 @@ class PrePro:
         position: int = text.find("/*")
         while position != -1:
             end_position: int = text[position:].find("*/")
-            if end_position:
+            if end_position != -1:
                 text = text[:position] + text[position+end_position+2:]
             else:
                 raise ValueError()
             position = text.find("/*")
         return text.strip()
-
-class Token:
-
-    tokenType: TokenTypes
-    value: int
-
-    def __init__(self, tokenType: TokenTypes, value: int):
-        self.tokenType = tokenType
-        self.value = value
 
 class Tokenizer:
 
@@ -103,57 +86,60 @@ class Parser:
         code = prepro.filter(code)
         self.tokens = Tokenizer(code)
 
-    def parseExpression(self) -> int:
-        total = self.parseTerm()
+    def parseExpression(self) -> Node:
+        node = self.parseTerm()
+        root = BinOp(Token(TokenTypes.EOF, 0), node, NoOp(Token(TokenTypes.EOF, 0)))
         while self.tokens.actual.tokenType in self.levelZeroTokens:
-            if self.tokens.actual.tokenType == TokenTypes.MINUS:
-                total -= self.parseTerm()
-            elif self.tokens.actual.tokenType == TokenTypes.PLUS:
-                total += self.parseTerm()
-        return total
+            root.setValue(self.tokens.actual)
+            root.setRight(self.parseTerm())
+            tmp = BinOp(Token(TokenTypes.EOF, 0), root, NoOp(Token(TokenTypes.EOF, 0)))
+            root = tmp
+        root = root.children[0]
+        return root
 
-    def parseTerm(self) -> int:
-        total = self.parseFactor()
+    def parseTerm(self) -> Node:
+        node = self.parseFactor()
+        root = BinOp(Token(TokenTypes.EOF, 0), node, NoOp(Token(TokenTypes.EOF, 0)))
         self.tokens.selectNext()
         while self.tokens.actual.tokenType in self.levelOneTokens:
-            if self.tokens.actual.tokenType == TokenTypes.DIVIDER:
-                total = total // self.parseFactor()
-            elif self.tokens.actual.tokenType == TokenTypes.MULTIPLIER:
-                total *= self.parseFactor()
+            root.setValue(self.tokens.actual)
+            root.setRight(self.parseFactor())
+            tmp = BinOp(Token(TokenTypes.EOF, 0), root, NoOp(Token(TokenTypes.EOF, 0)))
+            root = tmp
             self.tokens.selectNext()
-        return total
+        root = root.children[0]
+        return root
     
-    def parseFactor(self) -> int:
+    def parseFactor(self) -> Node:
         self.tokens.selectNext()
-        total = 0
         if self.tokens.actual.tokenType == TokenTypes.NUMBER:
-            total = self.tokens.actual.value
-        elif self.tokens.actual.tokenType == TokenTypes.MINUS:
-            total -= self.parseFactor()
-        elif self.tokens.actual.tokenType == TokenTypes.PLUS:
-            total += self.parseFactor()
+            return IntVal(self.tokens.actual)
+        elif self.tokens.actual.tokenType in self.levelZeroTokens:
+            return UnOp(self.tokens.actual, self.parseFactor())
         elif self.tokens.actual.tokenType == TokenTypes.RPAR:
             raise ValueError()
         elif self.tokens.actual.tokenType == TokenTypes.LPAR:
             self.openPars += 1
-            total = self.parseExpression()
+            root = self.parseExpression()
             if self.tokens.actual.tokenType == TokenTypes.RPAR:
                 self.openPars -= 1
         else:
             raise BufferError(f"Invalid token type on factor. {self.tokens.actual.tokenType}")
-        return total
+        return root
 
     def run(self):
-        total = self.parseExpression()
+        root = self.parseExpression()
         if self.openPars != 0:
             raise BufferError("Parenteses fechados não correspondem aos abertos")
         if self.tokens.actual.tokenType != TokenTypes.EOF:
             raise EOFError()
-        return total
+        return root.evaluate()
 
 if __name__ == "__main__":
-    sentence = sys.argv[1]
-    # sentence = "3+2)"
+    f = sys.argv[1]
+    # f = "test.c"
+    with open(f, 'r') as tmp:
+        sentence = tmp.read()
     parser = Parser(sentence)
     print(parser.run())
 
