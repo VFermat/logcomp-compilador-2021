@@ -1,9 +1,8 @@
 from typing import NoReturn, Dict
-from nodes import Node
 
 class SymbolTable():
 
-    table: Dict[str, Node]
+    table: Dict[str, int]
 
     def __init__(self):
         self.table = {}
@@ -13,5 +12,5 @@ class SymbolTable():
             return self.table[variable]
         raise KeyError(f"No variable named {variable}")
 
-    def setVariable(self, variable: str, value: Node) -> NoReturn:
+    def setVariable(self, variable: str, value: int) -> NoReturn:
         self.table[variable] = value

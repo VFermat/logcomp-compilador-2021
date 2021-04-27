@@ -1,8 +1,8 @@
 import sys
-from typing import List, NoReturn
+from typing import List, NoReturn, Union
 from enum import Enum
 from tokens import Token, TokenTypes
-from nodes import BinOp, UnOp, IntVal, NoOp, Node
+from nodes import Block, Assigner, Print, BinOp, UnOp, IdentifierVal, IntVal, NoOp, Node
 from symbolTable import SymbolTable
 
 
@@ -110,16 +110,18 @@ class Parser:
         self.tokens = Tokenizer(code)
         self.symbols = SymbolTable()
 
-    def parseBlock(self) -> NoReturn:
+    def parseBlock(self) -> Block:
         self.tokens.selectNext()
+        block = Block()
         while self.tokens.actual.tokenType != TokenTypes.EOF:
-            self.parseCommand()
+            block.addNode(self.parseCommand())
             self.tokens.selectNext()
+        return block
 
-    def parseCommand(self) -> NoReturn:
+    def parseCommand(self) -> Union[Assigner, Print]:
         if self.tokens.actual.tokenType == TokenTypes.IDENTIFIER:
-            identifier = self.tokens.actual.value
-            if identifier == 'println':
+            identifier = self.tokens.actual
+            if identifier.value == 'println':
                 self.tokens.selectNext()
                 if self.tokens.actual.tokenType != TokenTypes.LPAR:
                     raise BufferError(
@@ -133,16 +135,18 @@ class Parser:
                 self.tokens.selectNext()
                 if self.tokens.actual.tokenType != TokenTypes.SEPARATOR:
                     raise BufferError("Invalid Token. Line should end with separator `;`")
-                print(value.evaluate())
+                return Print(identifier, value)
             else:
                 self.tokens.selectNext()
                 if self.tokens.actual.tokenType != TokenTypes.ASSIGN:
                     raise BufferError(
                         "Invalid Token. Identifier should be followed by assigner token `=`"
                     )
-                self.symbols.setVariable(identifier, self.parseExpression())
+                root = Assigner(identifier, self.parseExpression())
                 if self.tokens.actual.tokenType != TokenTypes.SEPARATOR:
                     raise BufferError("Invalid Token. Line should end with separator `;`")
+                return root
+        raise BufferError("Invalid line")
         
     def parseExpression(self) -> Node:
         node = self.parseTerm()
@@ -177,7 +181,7 @@ class Parser:
         elif self.tokens.actual.tokenType == TokenTypes.RPAR:
             raise ValueError()
         elif self.tokens.actual.tokenType == TokenTypes.IDENTIFIER:
-            root = self.symbols.getVariable(self.tokens.actual.value)
+            return IdentifierVal(Token(TokenTypes.IDENTIFIER, self.tokens.actual.value))
         elif self.tokens.actual.tokenType == TokenTypes.LPAR:
             self.openPars += 1
             root = self.parseExpression()
@@ -190,12 +194,12 @@ class Parser:
         return root
 
     def run(self):
-        self.parseBlock()
+        self.parseBlock().evaluate(self.symbols)
 
 
 if __name__ == "__main__":
-    # f = sys.argv[1]
-    f = "test.c"
+    f = sys.argv[1]
+    # f = "test.c"
     with open(f, "r") as tmp:
         sentence = tmp.read()
     parser = Parser(sentence)
