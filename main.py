@@ -80,7 +80,7 @@ class Tokenizer:
             elif char.isalpha():
                 temp = char
                 if i < len(self.origin) - 1:
-                    while self.origin[i + 1].isalpha():
+                    while self.origin[i + 1].isalnum() or self.origin[i + 1] == '_':
                         char = self.origin[i + 1]
                         i += 1
                         temp += char
@@ -146,6 +146,9 @@ class Parser:
                 if self.tokens.actual.tokenType != TokenTypes.SEPARATOR:
                     raise BufferError("Invalid Token. Line should end with separator `;`")
                 return root
+        elif self.tokens.actual.tokenType == TokenTypes.SEPARATOR:
+            self.tokens.selectNext()
+            return NoOp(self.tokens.actual)
         raise BufferError("Invalid line")
         
     def parseExpression(self) -> Node:
