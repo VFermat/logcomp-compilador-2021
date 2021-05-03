@@ -220,8 +220,8 @@ class Parser:
 
 
 if __name__ == "__main__":
-    # f = sys.argv[1]
-    f = "test.c"
+    f = sys.argv[1]
+    # f = "test.c"
     with open(f, "r") as tmp:
         sentence = tmp.read()
     parser = Parser(sentence)
