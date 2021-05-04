@@ -1,12 +1,13 @@
 from typing import NoReturn, Dict
 
-class SymbolTable():
+
+class SymbolTable:
 
     table: Dict[str, int]
 
     def __init__(self):
         self.table = {}
-    
+
     def getVariable(self, variable: str):
         if variable in self.table:
             return self.table[variable]

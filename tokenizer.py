@@ -1,4 +1,3 @@
-
 from tokens import Token, TokenTypes
 
 
@@ -40,25 +39,29 @@ class Tokenizer:
                 token = Token(TokenTypes.BOOL_LT, 1)
                 break
             elif char == "=":
-                if self.origin[i+1] == "=":
+                if self.origin[i + 1] == "=":
                     i += 1
                     token = Token(TokenTypes.BOOL_EQUAL, 1)
                 else:
                     token = Token(TokenTypes.ASSIGN, 0)
                 break
             elif char == "&":
-                if self.origin[i+1] == "&":
+                if self.origin[i + 1] == "&":
                     i += 1
                     token = Token(TokenTypes.BOOL_AND, 1)
                 else:
-                    raise BufferError(f"Invalid char {char} in position {self.position}")
+                    raise BufferError(
+                        f"Invalid char {char} in position {self.position}"
+                    )
                 break
             elif char == "|":
-                if self.origin[i+1] == "|":
+                if self.origin[i + 1] == "|":
                     i += 1
                     token = Token(TokenTypes.BOOL_OR, 1)
                 else:
-                    raise BufferError(f"Invalid char {char} in position {self.position}")
+                    raise BufferError(
+                        f"Invalid char {char} in position {self.position}"
+                    )
                 break
             elif char == ";":
                 token = Token(TokenTypes.SEPARATOR, 0)
@@ -94,7 +97,7 @@ class Tokenizer:
             elif char.isalpha():
                 temp = char
                 if i < len(self.origin) - 1:
-                    while self.origin[i + 1].isalnum() or self.origin[i + 1] == '_':
+                    while self.origin[i + 1].isalnum() or self.origin[i + 1] == "_":
                         char = self.origin[i + 1]
                         i += 1
                         temp += char

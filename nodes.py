@@ -2,14 +2,15 @@ from typing import List, NoReturn
 from tokens import Token, TokenTypes
 from symbolTable import SymbolTable
 
-class Node:
 
+class Node:
     def __init__(self, value: Token):
         self.value = value
         self.children = []
 
     def evaluate(self, table: SymbolTable) -> int:
         return 0
+
 
 class Block(Node):
 
@@ -25,6 +26,7 @@ class Block(Node):
     def addNode(self, node: Node):
         self.child.append(node)
 
+
 class Assigner(Node):
 
     child: Node
@@ -37,6 +39,7 @@ class Assigner(Node):
         table.setVariable(self.value.value, self.child.evaluate(table))
         return table
 
+
 class Print(Node):
 
     child: Node
@@ -47,6 +50,7 @@ class Print(Node):
 
     def evaluate(self, table: SymbolTable):
         print(self.child.evaluate(table))
+
 
 class While(Node):
 
@@ -61,6 +65,7 @@ class While(Node):
     def evaluate(self, table):
         while self.condition.evaluate(table):
             self.command.evaluate(table)
+
 
 class If(Node):
 
@@ -83,8 +88,8 @@ class If(Node):
         elif self.commandFalse is not None:
             return self.commandFalse.evaluate(table)
 
-class Readln(Node):
 
+class Readln(Node):
     def __init__(self, value):
         super().__init__(value)
 
@@ -103,7 +108,7 @@ class BinOp(Node):
     def __init__(self, value: Token, left: Node, right: Node):
         super().__init__(value)
         self.children = [left, right]
-    
+
     def evaluate(self, table: SymbolTable) -> int:
         if self.value.tokenType == TokenTypes.PLUS:
             return self.children[0].evaluate(table) + self.children[1].evaluate(table)
@@ -134,7 +139,8 @@ class BinOp(Node):
 
     def setRight(self, right: Node) -> NoReturn:
         self.children[1] = right
-    
+
+
 class UnOp(Node):
 
     child: Node
@@ -153,13 +159,14 @@ class UnOp(Node):
         else:
             raise BufferError()
 
-class IdentifierVal(Node):
 
+class IdentifierVal(Node):
     def __init__(self, value: Token):
         super().__init__(value)
 
     def evaluate(self, table: SymbolTable) -> int:
         return table.getVariable(self.value.value)
+
 
 class IntVal(Node):
 
@@ -170,6 +177,7 @@ class IntVal(Node):
 
     def evaluate(self, table: SymbolTable) -> int:
         return self.value.value
+
 
 class NoOp(Node):
 
