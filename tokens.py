@@ -1,6 +1,7 @@
 from typing import List, Union
 from enum import Enum
 
+
 class TokenTypes(Enum):
     NUMBER = 1
     EOF = 2
@@ -14,6 +15,15 @@ class TokenTypes(Enum):
     ASSIGN = 10
     SEPARATOR = 11
     PRINT = 12
+    BLOCK_OPENER = 13
+    BLOCK_CLOSER = 14
+    BOOL_EQUAL = 15
+    BOOL_AND = 16
+    BOOL_OR = 17
+    BOOL_GT = 18
+    BOOL_LT = 19
+    BOOL_NOT = 20
+
 
 class Token:
 

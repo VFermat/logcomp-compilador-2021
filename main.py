@@ -2,7 +2,21 @@ import sys
 from typing import List, NoReturn, Union
 from enum import Enum
 from tokens import Token, TokenTypes
-from nodes import Block, Assigner, Print, BinOp, UnOp, IdentifierVal, IntVal, NoOp, Node
+from tokenizer import Tokenizer
+from nodes import (
+    Block,
+    Assigner,
+    Print,
+    While,
+    If,
+    Readln,
+    BinOp,
+    UnOp,
+    IdentifierVal,
+    IntVal,
+    NoOp,
+    Node,
+)
 from symbolTable import SymbolTable
 
 
@@ -21,80 +35,6 @@ class PrePro:
         return text.strip()
 
 
-class Tokenizer:
-
-    position: str
-    position: int
-    actual: Token
-
-    def __init__(self, origin: str):
-        self.origin = origin
-        self.position = 0
-        self.actual = None
-
-    def selectNext(self) -> Token:
-        if self.position == len(self.origin):
-            token = Token(TokenTypes.EOF, 0)
-            self.actual = token
-            return token
-        i = self.position
-        while i < len(self.origin):
-            char = self.origin[i]
-            if char == "+":
-                token = Token(TokenTypes.PLUS, 1)
-                break
-            elif char == "-":
-                token = Token(TokenTypes.MINUS, 1)
-                break
-            elif char == "/":
-                token = Token(TokenTypes.DIVIDER, 1)
-                break
-            elif char == "*":
-                token = Token(TokenTypes.MULTIPLIER, 1)
-                break
-            elif char == "=":
-                token = Token(TokenTypes.ASSIGN, 0)
-                break
-            elif char == ";":
-                token = Token(TokenTypes.SEPARATOR, 0)
-                break
-            elif char.isdigit():
-                temp = char
-                if i < len(self.origin) - 1:
-                    while self.origin[i + 1].isdigit():
-                        char = self.origin[i + 1]
-                        i += 1
-                        temp += char
-                        if i == len(self.origin) - 1:
-                            break
-                token = Token(TokenTypes.NUMBER, int(temp))
-                break
-            elif char == "(":
-                token = Token(TokenTypes.LPAR, 1)
-                break
-            elif char == ")":
-                token = Token(TokenTypes.RPAR, 1)
-                break
-            elif char == " ":
-                i += 1
-            elif char.isalpha():
-                temp = char
-                if i < len(self.origin) - 1:
-                    while self.origin[i + 1].isalnum() or self.origin[i + 1] == '_':
-                        char = self.origin[i + 1]
-                        i += 1
-                        temp += char
-                        if i == len(self.origin) - 1:
-                            break
-                token = Token(TokenTypes.IDENTIFIER, temp)
-                break
-            else:
-                raise ValueError()
-        self.actual = token
-        self.position = i + 1
-        return token
-
-
 class Parser:
 
     tokens: Tokenizer
@@ -102,6 +42,7 @@ class Parser:
     levelOneTokens: List[TokenTypes] = [TokenTypes.MULTIPLIER, TokenTypes.DIVIDER]
     reservedWords: List[str] = ["println"]
     openPars: int = 0
+    openBlocks: int = 0
     symbols: SymbolTable
 
     def __init__(self, code: str):
@@ -111,46 +52,136 @@ class Parser:
         self.symbols = SymbolTable()
 
     def parseBlock(self) -> Block:
-        self.tokens.selectNext()
+        if self.tokens.actual.tokenType != TokenTypes.BLOCK_OPENER:
+            raise BufferError("Block requires opener token `{`")
         block = Block()
-        while self.tokens.actual.tokenType != TokenTypes.EOF:
+        self.openBlocks += 1
+        self.tokens.selectNext()
+        while self.tokens.actual.tokenType != TokenTypes.BLOCK_CLOSER:
             block.addNode(self.parseCommand())
+            if self.tokens.actual == TokenTypes.EOF:
+                return block
             self.tokens.selectNext()
+        self.openBlocks -= 1
         return block
 
-    def parseCommand(self) -> Union[Assigner, Print]:
+    def parseCommand(self) -> Node:
         if self.tokens.actual.tokenType == TokenTypes.IDENTIFIER:
             identifier = self.tokens.actual
-            if identifier.value == 'println':
-                self.tokens.selectNext()
+            self.tokens.selectNext()
+            if identifier.value == "println":
                 if self.tokens.actual.tokenType != TokenTypes.LPAR:
                     raise BufferError(
-                        "Invalid Token. Print should be followed by LPAR token `(`"
+                        f"Invalid Token. {identifier.value} should be followed by LPAR token `(`"
                     )
-                value = self.parseExpression()
+                value = self.parseOrExpr()
                 if self.tokens.actual.tokenType != TokenTypes.RPAR:
                     raise BufferError(
-                        "Invalid Token. Print expression should be followed by RPAR token `)`"
+                        f"Invalid Token. {identifier.value} should be followed by RPAR token `)`"
                     )
                 self.tokens.selectNext()
                 if self.tokens.actual.tokenType != TokenTypes.SEPARATOR:
-                    raise BufferError("Invalid Token. Line should end with separator `;`")
+                    raise BufferError(
+                        "Invalid Token. Line should end with separator `;`"
+                    )
                 return Print(identifier, value)
-            else:
+            elif identifier.value == "while":
+                if self.tokens.actual.tokenType != TokenTypes.LPAR:
+                    raise BufferError(
+                        f"Invalid Token. {identifier.value} should be followed by LPAR token `(`"
+                    )
+                condition = self.parseOrExpr()
+                if self.tokens.actual.tokenType != TokenTypes.RPAR:
+                    raise BufferError(
+                        f"Invalid Token. {identifier.value} should be followed by RPAR token `)`"
+                    )
                 self.tokens.selectNext()
+                command = self.parseCommand()
+                return While(identifier, condition, command)
+            elif identifier.value == "if":
+                if self.tokens.actual.tokenType != TokenTypes.LPAR:
+                    raise BufferError(
+                        f"Invalid Token. {identifier.value} should be followed by LPAR token `(`"
+                    )
+                condition = self.parseOrExpr()
+                if self.tokens.actual.tokenType != TokenTypes.RPAR:
+                    raise BufferError(
+                        f"Invalid Token. {identifier.value} should be followed by RPAR token `)`"
+                    )
+                self.tokens.selectNext()
+                command = self.parseCommand()
+                block = If(identifier, condition, command)
+                if (
+                    self.tokens.actual.tokenType == TokenTypes.IDENTIFIER
+                    and self.tokens.actual.value == "else"
+                ):
+                    self.tokens.selectNext()
+                    block.setCommandFalse(self.parseCommand())
+                return block
+            elif identifier.value == "else":
+                return self.parseCommand()
+            else:
                 if self.tokens.actual.tokenType != TokenTypes.ASSIGN:
                     raise BufferError(
                         "Invalid Token. Identifier should be followed by assigner token `=`"
                     )
-                root = Assigner(identifier, self.parseExpression())
+                root = Assigner(identifier, self.parseOrExpr())
                 if self.tokens.actual.tokenType != TokenTypes.SEPARATOR:
-                    raise BufferError("Invalid Token. Line should end with separator `;`")
+                    raise BufferError(
+                        "Invalid Token. Line should end with separator `;`"
+                    )
                 return root
         elif self.tokens.actual.tokenType == TokenTypes.SEPARATOR:
             self.tokens.selectNext()
             return NoOp(self.tokens.actual)
+        elif self.tokens.actual.tokenType == TokenTypes.BLOCK_OPENER:
+            return self.parseBlock()
         raise BufferError("Invalid line")
-        
+
+    def parseOrExpr(self) -> Node:
+        node = self.parseAndExpr()
+        root = BinOp(Token(TokenTypes.EOF, 0), node, NoOp(Token(TokenTypes.EOF, 0)))
+        while self.tokens.actual.tokenType == TokenTypes.BOOL_OR:
+            root.setValue(self.tokens.actual)
+            root.setRight(self.parseAndExpr())
+            tmp = BinOp(Token(TokenTypes.EOF, 0), root, NoOp(Token(TokenTypes.EOF, 0)))
+            root = tmp
+        root = root.children[0]
+        return root
+
+    def parseAndExpr(self) -> Node:
+        node = self.parseEqExpr()
+        root = BinOp(Token(TokenTypes.EOF, 0), node, NoOp(Token(TokenTypes.EOF, 0)))
+        while self.tokens.actual.tokenType == TokenTypes.BOOL_AND:
+            root.setValue(self.tokens.actual)
+            root.setRight(self.parseEqExpr())
+            tmp = BinOp(Token(TokenTypes.EOF, 0), root, NoOp(Token(TokenTypes.EOF, 0)))
+            root = tmp
+        root = root.children[0]
+        return root
+
+    def parseEqExpr(self) -> Node:
+        node = self.parseRelExpr()
+        root = BinOp(Token(TokenTypes.EOF, 0), node, NoOp(Token(TokenTypes.EOF, 0)))
+        while self.tokens.actual.tokenType == TokenTypes.BOOL_EQUAL:
+            root.setValue(self.tokens.actual)
+            root.setRight(self.parseRelExpr())
+            tmp = BinOp(Token(TokenTypes.EOF, 0), root, NoOp(Token(TokenTypes.EOF, 0)))
+            root = tmp
+        root = root.children[0]
+        return root
+
+    def parseRelExpr(self) -> Node:
+        node = self.parseExpression()
+        root = BinOp(Token(TokenTypes.EOF, 0), node, NoOp(Token(TokenTypes.EOF, 0)))
+        while self.tokens.actual.tokenType in [TokenTypes.BOOL_GT, TokenTypes.BOOL_LT]:
+            root.setValue(self.tokens.actual)
+            root.setRight(self.parseExpression())
+            tmp = BinOp(Token(TokenTypes.EOF, 0), root, NoOp(Token(TokenTypes.EOF, 0)))
+            root = tmp
+        root = root.children[0]
+        return root
+
     def parseExpression(self) -> Node:
         node = self.parseTerm()
         root = BinOp(Token(TokenTypes.EOF, 0), node, NoOp(Token(TokenTypes.EOF, 0)))
@@ -179,15 +210,28 @@ class Parser:
         self.tokens.selectNext()
         if self.tokens.actual.tokenType == TokenTypes.NUMBER:
             return IntVal(self.tokens.actual)
-        elif self.tokens.actual.tokenType in self.levelZeroTokens:
+        elif (
+            self.tokens.actual.tokenType in self.levelZeroTokens
+            or self.tokens.actual.tokenType == TokenTypes.BOOL_NOT
+        ):
             return UnOp(self.tokens.actual, self.parseFactor())
         elif self.tokens.actual.tokenType == TokenTypes.RPAR:
             raise ValueError()
         elif self.tokens.actual.tokenType == TokenTypes.IDENTIFIER:
-            return IdentifierVal(Token(TokenTypes.IDENTIFIER, self.tokens.actual.value))
+            if self.tokens.actual.value != "readln":
+                return IdentifierVal(
+                    Token(TokenTypes.IDENTIFIER, self.tokens.actual.value)
+                )
+            self.tokens.selectNext()
+            if self.tokens.actual.tokenType != TokenTypes.LPAR:
+                raise BufferError()
+            self.tokens.selectNext()
+            if self.tokens.actual.tokenType != TokenTypes.RPAR:
+                raise BufferError()
+            return Readln(self.tokens.actual)
         elif self.tokens.actual.tokenType == TokenTypes.LPAR:
             self.openPars += 1
-            root = self.parseExpression()
+            root = self.parseOrExpr()
             if self.tokens.actual.tokenType == TokenTypes.RPAR:
                 self.openPars -= 1
         else:
@@ -196,8 +240,20 @@ class Parser:
             )
         return root
 
-    def run(self):
-        self.parseBlock().evaluate(self.symbols)
+    def run(self) -> NoReturn:
+        self.tokens.selectNext()
+        block = self.parseBlock()
+        self.tokens.selectNext()
+        if (
+            self.openPars == 0
+            and self.openBlocks == 0
+            and self.tokens.actual.tokenType == TokenTypes.EOF
+        ):
+            block.evaluate(self.symbols)
+        else:
+            raise BufferError(
+                f"Open Pars: {self.openPars} | Open Blocks: {self.openBlocks} | Last Token: {self.tokens.actual.tokenType}"
+            )
 
 
 if __name__ == "__main__":
