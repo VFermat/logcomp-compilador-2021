@@ -54,7 +54,7 @@ class Parser:
     def parseBlock(self) -> Block:
         if self.tokens.actual.tokenType != TokenTypes.BLOCK_OPENER:
             raise BufferError("Block requires opener token `{`")
-        block = Block()
+        block = Block(self.tokens.actual)
         self.openBlocks += 1
         self.tokens.selectNext()
         while self.tokens.actual.tokenType != TokenTypes.BLOCK_CLOSER:
@@ -62,6 +62,9 @@ class Parser:
             if self.tokens.actual == TokenTypes.EOF:
                 return block
             self.tokens.selectNext()
+            if block.child[-1].value.value == 'if' and self.tokens.actual.value == 'else':
+                block.child[-1].setCommandFalse(self.parseCommand())
+                self.tokens.selectNext()
         self.openBlocks -= 1
         return block
 
@@ -116,7 +119,8 @@ class Parser:
                     and self.tokens.actual.value == "else"
                 ):
                     self.tokens.selectNext()
-                    block.setCommandFalse(self.parseCommand())
+                    elseCommand = self.parseCommand()
+                    block.setCommandFalse(elseCommand)
                 return block
             elif identifier.value == "else":
                 return self.parseCommand()

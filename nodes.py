@@ -16,7 +16,8 @@ class Block(Node):
 
     child: List[Node]
 
-    def __init__(self):
+    def __init__(self, value: Token):
+        self.value = value
         self.child = []
 
     def evaluate(self, table: SymbolTable):
