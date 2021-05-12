@@ -1,6 +1,10 @@
 # logcomp-compilador-2021
 Repositorio dedicado a matéria de Lógica da Computação.
 
+# Status dos Testes
+
+![git status](http://3.129.230.99/svg/VFermat/logcomp-compilador-2021/)
+
 
 ## EBNF
 
