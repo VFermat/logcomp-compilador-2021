@@ -58,11 +58,16 @@ class Parser:
         self.openBlocks += 1
         self.tokens.selectNext()
         while self.tokens.actual.tokenType != TokenTypes.BLOCK_CLOSER:
-            block.addNode(self.parseCommand())
+            command = self.parseCommand()
+            if command.value.value == 'else':
+                raise BufferError(
+                    f"Invalid position for Else statement."
+                )
+            block.addNode(command)
             if self.tokens.actual == TokenTypes.EOF:
                 return block
             self.tokens.selectNext()
-            if block.child[-1].value.value == 'if' and self.tokens.actual.value == 'else':
+            if self.tokens.actual.value == 'else' and block.child[-1].value.value == 'if':
                 block.child[-1].setCommandFalse(self.parseCommand())
                 self.tokens.selectNext()
         self.openBlocks -= 1
@@ -123,7 +128,9 @@ class Parser:
                     block.setCommandFalse(elseCommand)
                 return block
             elif identifier.value == "else":
-                return self.parseCommand()
+                command = self.parseCommand()
+                command.value = identifier
+                return command
             else:
                 if self.tokens.actual.tokenType != TokenTypes.ASSIGN:
                     raise BufferError(
