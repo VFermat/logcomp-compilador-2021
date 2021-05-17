@@ -24,13 +24,17 @@ EQEXPR = RELEXPR, {"==", RELEXPR};
 RELEXPR = EXPRESSION, {(">" | "<"), EXPRESSION};
 EXPRESSION = TERM, {("+" | "-"), TERM} ;
 TERM = FACTOR, {("*" | "/"), FACTOR} ;
-FACTOR = ("+" | "-", "!"), FACTOR | "(", OREXPR, ")" | NUMBER | IDENTIFIER | READLN;
+FACTOR = ("+" | "-", "!"), FACTOR | "(", OREXPR, ")" | NUMBER | IDENTIFIER | READLN | STRING | BOOLEAN;
 
-IDENTIFIER = ALPHACHAR, {CHAR};
+IDENTIFIER = VTYPE, ALPHACHAR, {CHAR};
 READLN = "readln", "(", ")";
 
 NUMBER = DIGIT, {DIGIT} ;
 DIGIT = 0 | 1 | ... | 9 ;
+
+BOOLEAN = "true" | "false";
+
+STRING = """, {CHAR | SPACE}, """; 
 
 CHAR = ALPHACHAR | DIGIT | "_";
 ALPHACHAR = "A" | "B" | "C" | "D" | "E" | "F" | "G"
@@ -41,6 +45,9 @@ ALPHACHAR = "A" | "B" | "C" | "D" | "E" | "F" | "G"
        | "j" | "k" | "l" | "m" | "n" | "o" | "p"
        | "q" | "r" | "s" | "t" | "u" | "v" | "w"
        | "x" | "y" | "z" ;
+SPACE = " ";
+
+VTYPE = "int" | "bool" | "string";
 ```
 
 ## Diagrama
