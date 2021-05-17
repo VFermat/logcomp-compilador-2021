@@ -23,6 +23,8 @@ class TokenTypes(Enum):
     BOOL_GT = 18
     BOOL_LT = 19
     BOOL_NOT = 20
+    STRING = 21
+    BOOLEAN = 22
 
 
 class Token:
