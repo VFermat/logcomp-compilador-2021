@@ -28,8 +28,9 @@ class TokenTypes(Enum):
 class Token:
 
     tokenType: TokenTypes
-    value: Union[int, str]
+    value: Union[int, str, bool]
+    varType: Union["int", "str", "bool"]
 
-    def __init__(self, tokenType: TokenTypes, value: int):
+    def __init__(self, tokenType: TokenTypes, value: Union[int, str, bool]):
         self.tokenType = tokenType
         self.value = value

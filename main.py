@@ -40,6 +40,7 @@ class Parser:
     tokens: Tokenizer
     levelZeroTokens: List[TokenTypes] = [TokenTypes.PLUS, TokenTypes.MINUS]
     levelOneTokens: List[TokenTypes] = [TokenTypes.MULTIPLIER, TokenTypes.DIVIDER]
+    variableTypes: List[str] = ['int', 'bool', 'var']
     reservedWords: List[str] = ["println"]
     openPars: int = 0
     openBlocks: int = 0
@@ -77,7 +78,19 @@ class Parser:
         if self.tokens.actual.tokenType == TokenTypes.IDENTIFIER:
             identifier = self.tokens.actual
             self.tokens.selectNext()
-            if identifier.value == "println":
+            if identifier.value in self.variableTypes:
+                variable = self.tokens.actual
+                self.tokens.selectNext()
+                if self.tokens.actual.tokenType == TokenTypes.SEPARATOR:
+                    return Assigner(variable, NoOp(variable), identifier.value)
+                elif self.tokens.actual.tokenType == TokenTypes.ASSIGN:
+                    root = Assigner(variable, self.parseOrExpr(), identifier.value)
+                    if self.tokens.actual.tokenType != TokenTypes.SEPARATOR:
+                        raise BufferError(
+                            "Invalid Token. Line should end with separator `;`"
+                        )
+                    return root
+            elif identifier.value == "println":
                 if self.tokens.actual.tokenType != TokenTypes.LPAR:
                     raise BufferError(
                         f"Invalid Token. {identifier.value} should be followed by LPAR token `(`"
