@@ -123,7 +123,7 @@ class Tokenizer:
                     token = Token(TokenTypes.IDENTIFIER, temp)
                 break
             else:
-                raise ValueError()
+                i += 1
         self.actual = token
         self.position = i + 1
         return token
