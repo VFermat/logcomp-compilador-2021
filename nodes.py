@@ -1,6 +1,9 @@
-from typing import List, NoReturn
+from typing import List, NoReturn, Union
 from tokens import Token, TokenTypes
 from symbolTable import SymbolTable
+
+
+VARTYPES = Union[str, bool, int]
 
 
 class Node:
@@ -32,12 +35,17 @@ class Assigner(Node):
 
     child: Node
 
-    def __init__(self, value: Token, child: Node):
+    def __init__(self, value: Token, child: Node, varType: str = None):
         self.value = value
         self.child = child
+        self.varType = varType
 
     def evaluate(self, table: SymbolTable) -> SymbolTable:
-        table.setVariable(self.value.value, self.child.evaluate(table))
+        value = self.child.evaluate(table)
+        if self.varType:
+            table.declareVariable(self.value.value, value[0], self.varType)
+        else:
+            table.setVariable(self.value.value, value[0], value[1])
         return table
 
 
@@ -50,7 +58,7 @@ class Print(Node):
         self.child = child
 
     def evaluate(self, table: SymbolTable):
-        print(self.child.evaluate(table))
+        print(self.child.evaluate(table)[0])
 
 
 class While(Node):
@@ -64,7 +72,7 @@ class While(Node):
         self.command = command
 
     def evaluate(self, table):
-        while self.condition.evaluate(table):
+        while self.condition.evaluate(table)[0]:
             self.command.evaluate(table)
 
 
@@ -84,7 +92,7 @@ class If(Node):
         self.commandFalse = commandFalse
 
     def evaluate(self, table):
-        if self.condition.evaluate(table):
+        if self.condition.evaluate(table)[0]:
             return self.commandTrue.evaluate(table)
         elif self.commandFalse is not None:
             return self.commandFalse.evaluate(table)
@@ -94,41 +102,58 @@ class Readln(Node):
     def __init__(self, value):
         super().__init__(value)
 
-    def evaluate(self, table):
+    def evaluate(self, table) -> Token:
         value = input()
         if value.isnumeric():
-            return int(value)
+            return Token(TokenTypes.NUMBER, int(value), "int")
         else:
-            return value
+            return Token(TokenTypes.IDENTIFIER, value, "string")
 
 
 class BinOp(Node):
 
+    aritOperators: List[TokenTypes] = [
+        TokenTypes.PLUS,
+        TokenTypes.MINUS,
+        TokenTypes.MULTIPLIER,
+        TokenTypes.DIVIDER,
+    ]
     children: List[Node]
 
     def __init__(self, value: Token, left: Node, right: Node):
         super().__init__(value)
         self.children = [left, right]
 
-    def evaluate(self, table: SymbolTable) -> int:
+    def evaluate(self, table: SymbolTable):
+        childrenZero = self.children[0].evaluate(table)
+        childrenOne = self.children[1].evaluate(table)
+        if (
+            (childrenOne[1] == "string" and childrenZero[1] != "string")
+            or (childrenOne[1] != "string" and childrenZero[1] == "string")
+            or (
+                self.value.tokenType in self.aritOperators
+                and "string" in [childrenZero[1], childrenOne[1]]
+            )
+        ):
+            raise BufferError("Invalid operation between strings")
         if self.value.tokenType == TokenTypes.PLUS:
-            return self.children[0].evaluate(table) + self.children[1].evaluate(table)
+            return int(childrenZero[0]) + int(childrenOne[0]), "int"
         elif self.value.tokenType == TokenTypes.MINUS:
-            return self.children[0].evaluate(table) - self.children[1].evaluate(table)
+            return int(childrenZero[0]) - int(childrenOne[0]), "int"
         elif self.value.tokenType == TokenTypes.MULTIPLIER:
-            return self.children[0].evaluate(table) * self.children[1].evaluate(table)
+            return int(childrenZero[0]) * int(childrenOne[0]), "int"
         elif self.value.tokenType == TokenTypes.DIVIDER:
-            return self.children[0].evaluate(table) // self.children[1].evaluate(table)
+            return int(childrenZero[0]) / int(childrenOne[0]), "int"
         elif self.value.tokenType == TokenTypes.BOOL_AND:
-            return self.children[0].evaluate(table) and self.children[1].evaluate(table)
+            return bool(childrenZero[0] and childrenOne[0]), "bool"
         elif self.value.tokenType == TokenTypes.BOOL_OR:
-            return self.children[0].evaluate(table) or self.children[1].evaluate(table)
+            return bool(childrenZero[0] or childrenOne[0]), "bool"
         elif self.value.tokenType == TokenTypes.BOOL_GT:
-            return self.children[0].evaluate(table) > self.children[1].evaluate(table)
+            return bool(childrenZero[0] > childrenOne[0]), "bool"
         elif self.value.tokenType == TokenTypes.BOOL_LT:
-            return self.children[0].evaluate(table) < self.children[1].evaluate(table)
+            return bool(childrenZero[0] < childrenOne[0]), "bool"
         elif self.value.tokenType == TokenTypes.BOOL_EQUAL:
-            return self.children[0].evaluate(table) == self.children[1].evaluate(table)
+            return bool(childrenZero[0] == childrenOne[0]), "bool"
         else:
             raise BufferError()
 
@@ -150,13 +175,14 @@ class UnOp(Node):
         super().__init__(value)
         self.child = child
 
-    def evaluate(self, table: SymbolTable) -> int:
+    def evaluate(self, table: SymbolTable):
+        child = self.child.evaluate(table)
         if self.value.tokenType == TokenTypes.PLUS:
-            return +self.child.evaluate(table)
+            return +child[0], child[1]
         elif self.value.tokenType == TokenTypes.MINUS:
-            return -self.child.evaluate(table)
+            return -child[0], child[1]
         elif self.value.tokenType == TokenTypes.BOOL_NOT:
-            return not self.child.evaluate(table)
+            return not child[0], child[1]
         else:
             raise BufferError()
 
@@ -165,27 +191,37 @@ class IdentifierVal(Node):
     def __init__(self, value: Token):
         super().__init__(value)
 
-    def evaluate(self, table: SymbolTable) -> int:
+    def evaluate(self, table: SymbolTable):
         return table.getVariable(self.value.value)
 
 
 class IntVal(Node):
-
-    child: Node
-
     def __init__(self, value: Token):
         super().__init__(value)
 
-    def evaluate(self, table: SymbolTable) -> int:
-        return self.value.value
+    def evaluate(self, table: SymbolTable):
+        return self.value.value, "int"
+
+
+class BoolVal(Node):
+    def __init__(self, value: Token):
+        super().__init__(value)
+
+    def evaluate(self, table: SymbolTable):
+        return bool(self.value.value), "bool"
+
+
+class StrVal(Node):
+    def __init__(self, value: Token):
+        super().__init__(value)
+
+    def evaluate(self, table: SymbolTable):
+        return self.value.value, "string"
 
 
 class NoOp(Node):
-
-    children: List[Node]
-
     def __init__(self, value: Token):
         super().__init__(value)
 
-    def evaluate(self, table: SymbolTable) -> int:
-        return 0
+    def evaluate(self, table: SymbolTable):
+        return 0, "int"

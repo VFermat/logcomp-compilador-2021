@@ -16,6 +16,8 @@ from nodes import (
     IntVal,
     NoOp,
     Node,
+    StrVal,
+    BoolVal,
 )
 from symbolTable import SymbolTable
 
@@ -40,7 +42,7 @@ class Parser:
     tokens: Tokenizer
     levelZeroTokens: List[TokenTypes] = [TokenTypes.PLUS, TokenTypes.MINUS]
     levelOneTokens: List[TokenTypes] = [TokenTypes.MULTIPLIER, TokenTypes.DIVIDER]
-    reservedWords: List[str] = ["println"]
+    variableTypes: List[str] = ["int", "bool", "string"]
     openPars: int = 0
     openBlocks: int = 0
     symbols: SymbolTable
@@ -59,15 +61,16 @@ class Parser:
         self.tokens.selectNext()
         while self.tokens.actual.tokenType != TokenTypes.BLOCK_CLOSER:
             command = self.parseCommand()
-            if command.value.value == 'else':
-                raise BufferError(
-                    f"Invalid position for Else statement."
-                )
+            if command.value.value == "else":
+                raise BufferError(f"Invalid position for Else statement.")
             block.addNode(command)
             if self.tokens.actual == TokenTypes.EOF:
                 return block
             self.tokens.selectNext()
-            if self.tokens.actual.value == 'else' and block.child[-1].value.value == 'if':
+            if (
+                self.tokens.actual.value == "else"
+                and block.child[-1].value.value == "if"
+            ):
                 block.child[-1].setCommandFalse(self.parseCommand())
                 self.tokens.selectNext()
         self.openBlocks -= 1
@@ -77,7 +80,19 @@ class Parser:
         if self.tokens.actual.tokenType == TokenTypes.IDENTIFIER:
             identifier = self.tokens.actual
             self.tokens.selectNext()
-            if identifier.value == "println":
+            if identifier.value in self.variableTypes:
+                variable = self.tokens.actual
+                self.tokens.selectNext()
+                if self.tokens.actual.tokenType == TokenTypes.SEPARATOR:
+                    return Assigner(variable, NoOp(variable), identifier.value)
+                elif self.tokens.actual.tokenType == TokenTypes.ASSIGN:
+                    root = Assigner(variable, self.parseOrExpr(), identifier.value)
+                    if self.tokens.actual.tokenType != TokenTypes.SEPARATOR:
+                        raise BufferError(
+                            "Invalid Token. Line should end with separator `;`"
+                        )
+                    return root
+            elif identifier.value == "println":
                 if self.tokens.actual.tokenType != TokenTypes.LPAR:
                     raise BufferError(
                         f"Invalid Token. {identifier.value} should be followed by LPAR token `(`"
@@ -245,6 +260,10 @@ class Parser:
             root = self.parseOrExpr()
             if self.tokens.actual.tokenType == TokenTypes.RPAR:
                 self.openPars -= 1
+        elif self.tokens.actual.tokenType == TokenTypes.STRING:
+            return StrVal(self.tokens.actual)
+        elif self.tokens.actual.tokenType == TokenTypes.BOOLEAN:
+            return BoolVal(self.tokens.actual)
         else:
             raise BufferError(
                 f"Invalid token type on factor. {self.tokens.actual.tokenType}"

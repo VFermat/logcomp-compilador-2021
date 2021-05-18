@@ -23,13 +23,16 @@ class TokenTypes(Enum):
     BOOL_GT = 18
     BOOL_LT = 19
     BOOL_NOT = 20
+    STRING = 21
+    BOOLEAN = 22
 
 
 class Token:
 
     tokenType: TokenTypes
-    value: Union[int, str]
+    value: Union[int, str, bool]
+    varType: Union["int", "str", "bool"]
 
-    def __init__(self, tokenType: TokenTypes, value: int):
+    def __init__(self, tokenType: TokenTypes, value: Union[int, str, bool]):
         self.tokenType = tokenType
         self.value = value

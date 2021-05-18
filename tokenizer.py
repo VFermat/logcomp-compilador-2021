@@ -92,6 +92,18 @@ class Tokenizer:
             elif char == "!":
                 token = Token(TokenTypes.BOOL_NOT, 1)
                 break
+            elif char == '"':
+                temp = char
+                if i < len(self.origin) - 1:
+                    while self.origin[i + 1] != '"':
+                        char = self.origin[i + 1]
+                        i += 1
+                        temp += char
+                        if i == len(self.origin) - 1:
+                            break
+                i += 1
+                token = Token(TokenTypes.STRING, temp[1:])
+                break
             elif char == " ":
                 i += 1
             elif char.isalpha():
@@ -103,7 +115,12 @@ class Tokenizer:
                         temp += char
                         if i == len(self.origin) - 1:
                             break
-                token = Token(TokenTypes.IDENTIFIER, temp)
+                if temp == "true":
+                    token = Token(TokenTypes.BOOLEAN, True)
+                elif temp == "false":
+                    token = Token(TokenTypes.BOOLEAN, False)
+                else:
+                    token = Token(TokenTypes.IDENTIFIER, temp)
                 break
             else:
                 raise ValueError()
