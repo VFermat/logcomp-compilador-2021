@@ -92,6 +92,8 @@ class If(Node):
         self.commandFalse = commandFalse
 
     def evaluate(self, table):
+        if self.condition.value.tokenType == TokenTypes.STRING:
+            raise TypeError("If condition should be a Bool")
         if self.condition.evaluate(table)[0]:
             return self.commandTrue.evaluate(table)
         elif self.commandFalse is not None:
@@ -105,9 +107,9 @@ class Readln(Node):
     def evaluate(self, table) -> Token:
         value = input()
         if value.isnumeric():
-            return Token(TokenTypes.NUMBER, int(value), "int")
+            return  int(value), "int"
         else:
-            return Token(TokenTypes.IDENTIFIER, value, "string")
+            return  value, "string"
 
 
 class BinOp(Node):
@@ -143,7 +145,7 @@ class BinOp(Node):
         elif self.value.tokenType == TokenTypes.MULTIPLIER:
             return int(childrenZero[0]) * int(childrenOne[0]), "int"
         elif self.value.tokenType == TokenTypes.DIVIDER:
-            return int(childrenZero[0]) / int(childrenOne[0]), "int"
+            return int(int(childrenZero[0]) / int(childrenOne[0])), "int"
         elif self.value.tokenType == TokenTypes.BOOL_AND:
             return bool(childrenZero[0] and childrenOne[0]), "bool"
         elif self.value.tokenType == TokenTypes.BOOL_OR:

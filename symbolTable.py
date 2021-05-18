@@ -27,5 +27,10 @@ class SymbolTable:
         if variable not in self.table:
             raise NameError(f"Variable {variable} not declared")
         elif varType != self.table[variable]["varType"]:
-            raise TypeError()
+            if varType == 'int' and self.table[variable]["varType"] == 'bool':
+                value = bool(value)
+            elif varType == 'bool' and self.table[variable]["varType"] == 'int':
+                value = int(value)
+            else:
+                raise TypeError()
         self.table[variable]["value"] = value
