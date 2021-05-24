@@ -8,17 +8,21 @@ VARTYPES = Union[str, bool, int]
 
 
 class Node:
+    i: int = 0
 
     logger: Logger = Logger()
-    i: int = 0
 
     def __init__(self, value: Token):
         self.value = value
         self.children = []
-        self.i += 1
+        self.i = self.increaseId()
 
     def evaluate(self, table: SymbolTable) -> int:
         return 0
+
+    def increaseId(self) -> int:
+        Node.i += 1
+        return Node.i
 
 
 class Block(Node):
