@@ -20,6 +20,7 @@ from nodes import (
     BoolVal,
 )
 from symbolTable import SymbolTable
+from logger import Logger
 
 
 class PrePro:
@@ -271,6 +272,8 @@ class Parser:
         return root
 
     def run(self) -> NoReturn:
+        with open('baseNasm.txt', 'r') as f:
+            Logger().log(f.read())
         self.tokens.selectNext()
         block = self.parseBlock()
         self.tokens.selectNext()
@@ -280,6 +283,12 @@ class Parser:
             and self.tokens.actual.tokenType == TokenTypes.EOF
         ):
             block.evaluate(self.symbols)
+            Logger().log("""
+; interrupcao de saida
+POP EBP
+MOV EAX, 1
+INT 0x80
+            """)
         else:
             raise BufferError(
                 f"Open Pars: {self.openPars} | Open Blocks: {self.openBlocks} | Last Token: {self.tokens.actual.tokenType}"
