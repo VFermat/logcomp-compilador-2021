@@ -183,8 +183,10 @@ class BinOp(Node):
             self.logger.log("SUB EAX, EBX ; BinOp subtracts both children")
             result = (int(childrenZero[0]) - int(childrenOne[0]), "int")
         elif self.value.tokenType == TokenTypes.MULTIPLIER:
+            self.logger.log("MUL EAX, EBX ; BinOp multiply both children")
             result = (int(childrenZero[0]) * int(childrenOne[0]), "int")
         elif self.value.tokenType == TokenTypes.DIVIDER:
+            self.logger.log("DIV EAX, EBX ; BinOp divides both children")
             result = (int(int(childrenZero[0]) / int(childrenOne[0])), "int")
         elif self.value.tokenType == TokenTypes.BOOL_AND:
             self.logger.log("AND EAX, EBX ; BinOp subtracts both children")
@@ -193,11 +195,16 @@ class BinOp(Node):
             self.logger.log("OR EAX, EBX ; BinOp subtracts both children")
             result = (bool(childrenZero[0] or childrenOne[0]), "bool")
         elif self.value.tokenType == TokenTypes.BOOL_GT:
+            self.logger.log("CMP EAX, EBX ; BinOp subtracts both children")
+            self.logger.log("CALL binop_jg")
             result = (bool(childrenZero[0] > childrenOne[0]), "bool")
         elif self.value.tokenType == TokenTypes.BOOL_LT:
+            self.logger.log("CMP EAX, EBX ; BinOp subtracts both children")
+            self.logger.log("CALL binop_jl")
             result = (bool(childrenZero[0] < childrenOne[0]), "bool")
         elif self.value.tokenType == TokenTypes.BOOL_EQUAL:
             self.logger.log("CMP EAX, EBX ; BinOp subtracts both children")
+            self.logger.log("CALL binop_je")
             result = (bool(childrenZero[0] == childrenOne[0]), "bool")
         else:
             raise BufferError()
