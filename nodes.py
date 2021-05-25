@@ -187,7 +187,7 @@ class BinOp(Node):
             self.logger.log("SUB EAX, EBX ; BinOp subtracts both children")
             result = (int(childrenZero[0]) - int(childrenOne[0]), "int")
         elif self.value.tokenType == TokenTypes.MULTIPLIER:
-            self.logger.log("MUL EAX, EBX ; BinOp multiply both children")
+            self.logger.log("IMUL EBX ; BinOp multiply both children")
             result = (int(childrenZero[0]) * int(childrenOne[0]), "int")
         elif self.value.tokenType == TokenTypes.DIVIDER:
             self.logger.log("DIV EAX, EBX ; BinOp divides both children")
