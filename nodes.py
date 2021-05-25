@@ -182,21 +182,27 @@ class BinOp(Node):
             raise BufferError("Invalid operation between strings")
         if self.value.tokenType == TokenTypes.PLUS:
             self.logger.log("ADD EAX, EBX ; BinOp Adds both children")
+            self.logger.log("MOV EBX, EAX ; BinOp returns to EBX")
             result = (int(childrenZero[0]) + int(childrenOne[0]), "int")
         elif self.value.tokenType == TokenTypes.MINUS:
             self.logger.log("SUB EAX, EBX ; BinOp subtracts both children")
+            self.logger.log("MOV EBX, EAX ; BinOp returns to EBX")
             result = (int(childrenZero[0]) - int(childrenOne[0]), "int")
         elif self.value.tokenType == TokenTypes.MULTIPLIER:
             self.logger.log("IMUL EBX ; BinOp multiply both children")
+            self.logger.log("MOV EBX, EAX ; BinOp returns to EBX")
             result = (int(childrenZero[0]) * int(childrenOne[0]), "int")
         elif self.value.tokenType == TokenTypes.DIVIDER:
             self.logger.log("DIV EAX, EBX ; BinOp divides both children")
+            self.logger.log("MOV EBX, EAX ; BinOp returns to EBX")
             result = (int(int(childrenZero[0]) / int(childrenOne[0])), "int")
         elif self.value.tokenType == TokenTypes.BOOL_AND:
             self.logger.log("AND EAX, EBX ; BinOp subtracts both children")
+            self.logger.log("MOV EBX, EAX ; BinOp returns to EBX")
             result = (bool(childrenZero[0] and childrenOne[0]), "bool")
         elif self.value.tokenType == TokenTypes.BOOL_OR:
             self.logger.log("OR EAX, EBX ; BinOp subtracts both children")
+            self.logger.log("MOV EBX, EAX ; BinOp returns to EBX")
             result = (bool(childrenZero[0] or childrenOne[0]), "bool")
         elif self.value.tokenType == TokenTypes.BOOL_GT:
             self.logger.log("CMP EAX, EBX ; BinOp subtracts both children")
@@ -213,7 +219,6 @@ class BinOp(Node):
         else:
             raise BufferError()
         
-        self.logger.log("MOV EBX, EAX ; BinOp returns to EBX")
         return result
 
     def setValue(self, value: Token) -> NoReturn:
@@ -245,6 +250,8 @@ class UnOp(Node):
             self.logger.log("SUB EAX, EBX ; UnOp subtracts both children")
             result = (-child[0], child[1])
         elif self.value.tokenType == TokenTypes.BOOL_NOT:
+            self.logger.log("NOT EBX ; UnOp subtracts both children")
+            self.logger.log("MOV EAX, EBX ; UnOp subtracts both children")
             result = (not child[0], child[1])
         else:
             raise BufferError()
