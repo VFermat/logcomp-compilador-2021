@@ -1,18 +1,28 @@
 from typing import List, NoReturn, Union
 from tokens import Token, TokenTypes
 from symbolTable import SymbolTable
+from logger import Logger
 
 
 VARTYPES = Union[str, bool, int]
 
 
 class Node:
+    i: int = 0
+
+    logger: Logger = Logger()
+
     def __init__(self, value: Token):
         self.value = value
         self.children = []
+        self.i = self.increaseId()
 
     def evaluate(self, table: SymbolTable) -> int:
         return 0
+
+    def increaseId(self) -> int:
+        Node.i += 1
+        return Node.i
 
 
 class Block(Node):
@@ -41,11 +51,17 @@ class Assigner(Node):
         self.varType = varType
 
     def evaluate(self, table: SymbolTable) -> SymbolTable:
-        value = self.child.evaluate(table)
         if self.varType:
-            table.declareVariable(self.value.value, value[0], self.varType)
+            self.logger.log(f"PUSH DWORD 0 ; Dim {self.value.value} as {self.varType}")
+            value = self.child.evaluate(table)
+            variableId = table.declareVariable(self.value.value, value[0], self.varType)
+            if value[0]:
+                self.logger.log(f"MOV [EBP-{variableId*4}], EBX ; {self.value.value} = {value[0]}")
         else:
+            value = self.child.evaluate(table)
             table.setVariable(self.value.value, value[0], value[1])
+            variableId = table.setVariable(self.value.value, value[0], value[1])
+            self.logger.log(f"MOV [EBP-{variableId*4}], EBX ; {self.value.value} = {value[0]}")
         return table
 
 
@@ -58,7 +74,13 @@ class Print(Node):
         self.child = child
 
     def evaluate(self, table: SymbolTable):
-        print(self.child.evaluate(table)[0])
+        result = self.child.evaluate(table)
+        self.logger.log("""
+PUSH EBX ;
+CALL print ; calls print function
+POP EBX ;
+        """)
+        # print(result[0])
 
 
 class While(Node):
@@ -72,8 +94,15 @@ class While(Node):
         self.command = command
 
     def evaluate(self, table):
-        while self.condition.evaluate(table)[0]:
-            self.command.evaluate(table)
+        self.logger.log(f"LOOP_{self.i}:")
+        self.condition.evaluate(table)
+        self.logger.log(f"CMP EBX, False ; verifies if test is false")
+        self.logger.log(f"JE EXIT_{self.i} ; if test is false, exits")
+        self.command.evaluate(table)
+        self.logger.log(f"JMP LOOP_{self.i} ; Loops to begin of loop")
+        self.logger.log(f"EXIT_{self.i}:")
+        # while self.condition.evaluate(table)[0]:
+        #     self.command.evaluate(table)
 
 
 class If(Node):
@@ -94,10 +123,21 @@ class If(Node):
     def evaluate(self, table):
         if self.condition.value.tokenType == TokenTypes.STRING:
             raise TypeError("If condition should be a Bool")
-        if self.condition.evaluate(table)[0]:
-            return self.commandTrue.evaluate(table)
-        elif self.commandFalse is not None:
-            return self.commandFalse.evaluate(table)
+        self.condition.evaluate(table)[0]
+        self.logger.log(f"CMP EBX, False ; verifies if test is false")
+        if self.commandFalse is not None:
+            self.logger.log(f"JE ELSE_{self.i} ; if test is false, go to else")
+        else:
+            self.logger.log(f"JE EXIT_{self.i} ; if test is false, exits")
+        self.commandTrue.evaluate(table)
+        self.logger.log(f"JMP EXIT_{self.i} ;")
+        if self.commandFalse is not None:
+            self.logger.log(f"ELSE_{self.i}:")
+            self.commandFalse.evaluate(table)
+        self.logger.log(f"EXIT_{self.i}: ;")
+        # if self.condition.evaluate(table)[0]:
+        #     return self.commandTrue.evaluate(table)
+        #     return self.commandFalse.evaluate(table)
 
 
 class Readln(Node):
@@ -128,7 +168,9 @@ class BinOp(Node):
 
     def evaluate(self, table: SymbolTable):
         childrenZero = self.children[0].evaluate(table)
+        self.logger.log("PUSH EBX ; BinOp pushes child0 into pile")
         childrenOne = self.children[1].evaluate(table)
+        self.logger.log("POP EAX ; BinOp pops child0 from pile")
         if (
             (childrenOne[1] == "string" and childrenZero[1] != "string")
             or (childrenOne[1] != "string" and childrenZero[1] == "string")
@@ -139,25 +181,45 @@ class BinOp(Node):
         ):
             raise BufferError("Invalid operation between strings")
         if self.value.tokenType == TokenTypes.PLUS:
-            return int(childrenZero[0]) + int(childrenOne[0]), "int"
+            self.logger.log("ADD EAX, EBX ; BinOp Adds both children")
+            self.logger.log("MOV EBX, EAX ; BinOp returns to EBX")
+            result = (int(childrenZero[0]) + int(childrenOne[0]), "int")
         elif self.value.tokenType == TokenTypes.MINUS:
-            return int(childrenZero[0]) - int(childrenOne[0]), "int"
+            self.logger.log("SUB EAX, EBX ; BinOp subtracts both children")
+            self.logger.log("MOV EBX, EAX ; BinOp returns to EBX")
+            result = (int(childrenZero[0]) - int(childrenOne[0]), "int")
         elif self.value.tokenType == TokenTypes.MULTIPLIER:
-            return int(childrenZero[0]) * int(childrenOne[0]), "int"
+            self.logger.log("IMUL EBX ; BinOp multiply both children")
+            self.logger.log("MOV EBX, EAX ; BinOp returns to EBX")
+            result = (int(childrenZero[0]) * int(childrenOne[0]), "int")
         elif self.value.tokenType == TokenTypes.DIVIDER:
-            return int(int(childrenZero[0]) / int(childrenOne[0])), "int"
+            self.logger.log("DIV EAX, EBX ; BinOp divides both children")
+            self.logger.log("MOV EBX, EAX ; BinOp returns to EBX")
+            result = (int(int(childrenZero[0]) / int(childrenOne[0])), "int")
         elif self.value.tokenType == TokenTypes.BOOL_AND:
-            return bool(childrenZero[0] and childrenOne[0]), "bool"
+            self.logger.log("AND EAX, EBX ; BinOp subtracts both children")
+            self.logger.log("MOV EBX, EAX ; BinOp returns to EBX")
+            result = (bool(childrenZero[0] and childrenOne[0]), "bool")
         elif self.value.tokenType == TokenTypes.BOOL_OR:
-            return bool(childrenZero[0] or childrenOne[0]), "bool"
+            self.logger.log("OR EAX, EBX ; BinOp subtracts both children")
+            self.logger.log("MOV EBX, EAX ; BinOp returns to EBX")
+            result = (bool(childrenZero[0] or childrenOne[0]), "bool")
         elif self.value.tokenType == TokenTypes.BOOL_GT:
-            return bool(childrenZero[0] > childrenOne[0]), "bool"
+            self.logger.log("CMP EAX, EBX ; BinOp subtracts both children")
+            self.logger.log("CALL binop_jg")
+            result = (bool(childrenZero[0] > childrenOne[0]), "bool")
         elif self.value.tokenType == TokenTypes.BOOL_LT:
-            return bool(childrenZero[0] < childrenOne[0]), "bool"
+            self.logger.log("CMP EAX, EBX ; BinOp subtracts both children")
+            self.logger.log("CALL binop_jl")
+            result = (bool(childrenZero[0] < childrenOne[0]), "bool")
         elif self.value.tokenType == TokenTypes.BOOL_EQUAL:
-            return bool(childrenZero[0] == childrenOne[0]), "bool"
+            self.logger.log("CMP EAX, EBX ; BinOp subtracts both children")
+            self.logger.log("CALL binop_je")
+            result = (bool(childrenZero[0] == childrenOne[0]), "bool")
         else:
             raise BufferError()
+        
+        return result
 
     def setValue(self, value: Token) -> NoReturn:
         self.value = value
@@ -178,15 +240,24 @@ class UnOp(Node):
         self.child = child
 
     def evaluate(self, table: SymbolTable):
+        self.logger.log("PUSH 0 ; UnOp pushes 0 from pile")
         child = self.child.evaluate(table)
+        self.logger.log("POP EAX ; UnOp pops 0 from pile")
         if self.value.tokenType == TokenTypes.PLUS:
-            return +child[0], child[1]
+            self.logger.log("ADD EAX, EBX ; UnOp adds both children")
+            result = (+child[0], child[1])
         elif self.value.tokenType == TokenTypes.MINUS:
-            return -child[0], child[1]
+            self.logger.log("SUB EAX, EBX ; UnOp subtracts both children")
+            result = (-child[0], child[1])
         elif self.value.tokenType == TokenTypes.BOOL_NOT:
-            return not child[0], child[1]
+            self.logger.log("NOT EBX ; UnOp subtracts both children")
+            self.logger.log("MOV EAX, EBX ; UnOp subtracts both children")
+            result = (not child[0], child[1])
         else:
             raise BufferError()
+
+        self.logger.log("MOV EBX, EAX ; UnOp returns to EBX")
+        return result
 
 
 class IdentifierVal(Node):
@@ -194,6 +265,8 @@ class IdentifierVal(Node):
         super().__init__(value)
 
     def evaluate(self, table: SymbolTable):
+        variable = table.getVariable(self.value.value)
+        self.logger.log(f"MOV EBX, [EBP-{variable[2]*4}] ; IdentifierVal loads identifier to EBX")
         return table.getVariable(self.value.value)
 
 
@@ -202,6 +275,7 @@ class IntVal(Node):
         super().__init__(value)
 
     def evaluate(self, table: SymbolTable):
+        self.logger.log(f"MOV EBX, {self.value.value} ; IntVal loads value to EBX")
         return self.value.value, "int"
 
 
@@ -210,6 +284,7 @@ class BoolVal(Node):
         super().__init__(value)
 
     def evaluate(self, table: SymbolTable):
+        self.logger.log(f"MOV EBX, {bool(self.value.value)} ; BoolVal loads value to EBX")
         return bool(self.value.value), "bool"
 
 
@@ -226,4 +301,4 @@ class NoOp(Node):
         super().__init__(value)
 
     def evaluate(self, table: SymbolTable):
-        return 0, "int"
+        return None, "int"
