@@ -23,6 +23,9 @@ class Tokenizer:
             if char == "+":
                 token = Token(TokenTypes.PLUS, 1)
                 break
+            elif char == ",":
+                token = Token(TokenTypes.COMMA, 1)
+                break
             elif char == "-":
                 token = Token(TokenTypes.MINUS, 1)
                 break
@@ -41,14 +44,14 @@ class Tokenizer:
             elif char == "=":
                 if self.origin[i + 1] == "=":
                     i += 1
-                    token = Token(TokenTypes.BOOL_EQUAL, 1)
+                    token = Token(TokenTypes.BOOL_EQUAL, "==")
                 else:
-                    token = Token(TokenTypes.ASSIGN, 0)
+                    token = Token(TokenTypes.ASSIGN, "=")
                 break
             elif char == "&":
                 if self.origin[i + 1] == "&":
                     i += 1
-                    token = Token(TokenTypes.BOOL_AND, 1)
+                    token = Token(TokenTypes.BOOL_AND, "&&")
                 else:
                     raise BufferError(
                         f"Invalid char {char} in position {self.position}"
@@ -57,14 +60,14 @@ class Tokenizer:
             elif char == "|":
                 if self.origin[i + 1] == "|":
                     i += 1
-                    token = Token(TokenTypes.BOOL_OR, 1)
+                    token = Token(TokenTypes.BOOL_OR, "||")
                 else:
                     raise BufferError(
                         f"Invalid char {char} in position {self.position}"
                     )
                 break
             elif char == ";":
-                token = Token(TokenTypes.SEPARATOR, 0)
+                token = Token(TokenTypes.SEPARATOR, ";")
                 break
             elif char.isdigit():
                 temp = char
@@ -78,19 +81,19 @@ class Tokenizer:
                 token = Token(TokenTypes.NUMBER, int(temp))
                 break
             elif char == "(":
-                token = Token(TokenTypes.LPAR, 1)
+                token = Token(TokenTypes.LPAR, "(")
                 break
             elif char == ")":
-                token = Token(TokenTypes.RPAR, 1)
+                token = Token(TokenTypes.RPAR, ")")
                 break
             elif char == "{":
-                token = Token(TokenTypes.BLOCK_OPENER, 1)
+                token = Token(TokenTypes.BLOCK_OPENER, "{")
                 break
             elif char == "}":
-                token = Token(TokenTypes.BLOCK_CLOSER, 1)
+                token = Token(TokenTypes.BLOCK_CLOSER, "}")
                 break
             elif char == "!":
-                token = Token(TokenTypes.BOOL_NOT, 1)
+                token = Token(TokenTypes.BOOL_NOT, "!")
                 break
             elif char == '"':
                 temp = char

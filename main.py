@@ -18,7 +18,11 @@ from nodes import (
     Node,
     StrVal,
     BoolVal,
+    FuncCall,
+    FuncDef,
+    Return
 )
+from logger import Logger
 from symbolTable import SymbolTable
 
 
@@ -46,23 +50,57 @@ class Parser:
     openPars: int = 0
     openBlocks: int = 0
     symbols: SymbolTable
+    logger: Logger
 
-    def __init__(self, code: str):
+    def __init__(self, code: str, logger: Logger):
         prepro = PrePro()
         code = prepro.filter(code)
         self.tokens = Tokenizer(code)
         self.symbols = SymbolTable()
+        self.logger = logger
+
+    def parseFuncDefBlock(self) -> Block:
+        block = Block(self.tokens.actual)
+        while self.tokens.actual.value in self.variableTypes:
+            self.tokens.selectNext()
+            logger.logParse(f"[INFO] [FUNCBLOCK] Starting funcblock of name {self.tokens.actual.value}")
+            if self.tokens.actual.tokenType != TokenTypes.IDENTIFIER:
+                raise BufferError("Function should be identified by name")
+            func = FuncDef(self.tokens.actual)
+            self.tokens.selectNext()
+            if self.tokens.actual.tokenType != TokenTypes.LPAR:
+                raise BufferError("Function name should be followed by Parenthesis")
+            self.tokens.selectNext()
+            while self.tokens.actual.tokenType != TokenTypes.RPAR:
+                identifier = self.tokens.actual
+                if identifier.value not in self.variableTypes:
+                    raise BufferError("Argument should have a type")
+                self.tokens.selectNext()
+                variable = self.tokens.actual
+                logger.logParse(f"[INFO] [FUNCBLOCK] Adding arg to func. {identifier.value} {variable.value}")
+                func.addArgument(Assigner(variable, NoOp(variable), identifier.value))
+                self.tokens.selectNext()
+                if self.tokens.actual.tokenType == TokenTypes.COMMA:
+                    self.tokens.selectNext()
+            self.tokens.selectNext()
+            func.addStatements(self.parseCommand())
+            logger.logParse(f"[INFO] [FUNCBLOCK] End funcblock {func.value.value}")
+            block.addNode(func)
+            self.tokens.selectNext()
+        return block
 
     def parseBlock(self) -> Block:
         if self.tokens.actual.tokenType != TokenTypes.BLOCK_OPENER:
             raise BufferError("Block requires opener token `{`")
         block = Block(self.tokens.actual)
+        logger.logParse(f"[INFO] [BLOCK] Starting block")
         self.openBlocks += 1
         self.tokens.selectNext()
         while self.tokens.actual.tokenType != TokenTypes.BLOCK_CLOSER:
             command = self.parseCommand()
             if command.value.value == "else":
                 raise BufferError(f"Invalid position for Else statement.")
+            logger.logParse(f"[INFO] [BLOCK] New command parsed. Adding to Block. {type(command)}")
             block.addNode(command)
             if self.tokens.actual == TokenTypes.EOF:
                 return block
@@ -71,22 +109,27 @@ class Parser:
                 self.tokens.actual.value == "else"
                 and block.child[-1].value.value == "if"
             ):
+                logger.logParse(f"[INFO] [BLOCK] Find Else. Setting command false")
                 block.child[-1].setCommandFalse(self.parseCommand())
                 self.tokens.selectNext()
         self.openBlocks -= 1
+        logger.logParse(f"[INFO] [BLOCK] Ending block")
         return block
 
     def parseCommand(self) -> Node:
+        logger.logParse(f"[INFO] [COMMAND] Parsing new command.")
         if self.tokens.actual.tokenType == TokenTypes.IDENTIFIER:
             identifier = self.tokens.actual
             self.tokens.selectNext()
             if identifier.value in self.variableTypes:
                 variable = self.tokens.actual
+                logger.logParse(f"[INFO] [COMMAND] Variable declaration. {identifier.value} {variable.value}")
                 self.tokens.selectNext()
                 if self.tokens.actual.tokenType == TokenTypes.SEPARATOR:
                     return Assigner(variable, NoOp(variable), identifier.value)
                 elif self.tokens.actual.tokenType == TokenTypes.ASSIGN:
                     root = Assigner(variable, self.parseOrExpr(), identifier.value)
+                    logger.logParse(f"[INFO] [COMMAND] Set Variable. {root.child}")
                     if self.tokens.actual.tokenType != TokenTypes.SEPARATOR:
                         raise BufferError(
                             "Invalid Token. Line should end with separator `;`"
@@ -98,6 +141,7 @@ class Parser:
                         f"Invalid Token. {identifier.value} should be followed by LPAR token `(`"
                     )
                 value = self.parseOrExpr()
+                logger.logParse(f"[INFO] [COMMAND] Println. {value}")
                 if self.tokens.actual.tokenType != TokenTypes.RPAR:
                     raise BufferError(
                         f"Invalid Token. {identifier.value} should be followed by RPAR token `)`"
@@ -109,30 +153,36 @@ class Parser:
                     )
                 return Print(identifier, value)
             elif identifier.value == "while":
+                logger.logParse(f"[INFO] [COMMAND] While")
                 if self.tokens.actual.tokenType != TokenTypes.LPAR:
                     raise BufferError(
                         f"Invalid Token. {identifier.value} should be followed by LPAR token `(`"
                     )
                 condition = self.parseOrExpr()
+                logger.logParse(f"[INFO] [COMMAND] While Condition {condition}")
                 if self.tokens.actual.tokenType != TokenTypes.RPAR:
                     raise BufferError(
                         f"Invalid Token. {identifier.value} should be followed by RPAR token `)`"
                     )
                 self.tokens.selectNext()
                 command = self.parseCommand()
+                logger.logParse(f"[INFO] [COMMAND] While Condition {command}")
                 return While(identifier, condition, command)
             elif identifier.value == "if":
+                logger.logParse(f"[INFO] [COMMAND] If")
                 if self.tokens.actual.tokenType != TokenTypes.LPAR:
                     raise BufferError(
                         f"Invalid Token. {identifier.value} should be followed by LPAR token `(`"
                     )
                 condition = self.parseOrExpr()
+                logger.logParse(f"[INFO] [COMMAND] If Condition {condition}")
                 if self.tokens.actual.tokenType != TokenTypes.RPAR:
                     raise BufferError(
                         f"Invalid Token. {identifier.value} should be followed by RPAR token `)`"
                     )
                 self.tokens.selectNext()
                 command = self.parseCommand()
+                logger.logParse(f"[INFO] [COMMAND] If command {command}")
                 block = If(identifier, condition, command)
                 if (
                     self.tokens.actual.tokenType == TokenTypes.IDENTIFIER
@@ -144,23 +194,45 @@ class Parser:
                 return block
             elif identifier.value == "else":
                 command = self.parseCommand()
+                logger.logParse(f"[INFO] [COMMAND] Else command {command}")
                 command.value = identifier
                 return command
+            elif identifier.value == "return":
+                self.tokens.position -= len(self.tokens.actual.value)
+                command = self.parseOrExpr()
+                logger.logParse(f"[INFO] [COMMAND] Return command {command}")
+                return Return(identifier, command)
             else:
+                logger.logParse(f"[INFO] [COMMAND] Identifier")
                 if self.tokens.actual.tokenType != TokenTypes.ASSIGN:
+                    if self.tokens.actual.tokenType == TokenTypes.LPAR:
+                        func = FuncCall(identifier)
+                        logger.logParse(f"[INFO] [COMMAND] Funccall {identifier.value}")
+                        while self.tokens.actual.tokenType != TokenTypes.RPAR:
+                            logger.logParse(f"[INFO] [COMMAND] Adding param")
+                            func.addArgument(self.parseOrExpr())
+                        self.tokens.selectNext()
+                        if self.tokens.actual.tokenType != TokenTypes.SEPARATOR:
+                            raise BufferError(
+                                "Invalid Token. Line should end with separator `;`"
+                            )
+                        return func
                     raise BufferError(
                         "Invalid Token. Identifier should be followed by assigner token `=`"
                     )
                 root = Assigner(identifier, self.parseOrExpr())
+                logger.logParse(f"[INFO] [COMMAND] Assignment {root}")
                 if self.tokens.actual.tokenType != TokenTypes.SEPARATOR:
                     raise BufferError(
                         "Invalid Token. Line should end with separator `;`"
                     )
                 return root
         elif self.tokens.actual.tokenType == TokenTypes.SEPARATOR:
+            logger.logParse(f"[INFO] [COMMAND] Empty Line")
             self.tokens.selectNext()
             return NoOp(self.tokens.actual)
         elif self.tokens.actual.tokenType == TokenTypes.BLOCK_OPENER:
+            logger.logParse(f"[INFO] [COMMAND] Block Found")
             return self.parseBlock()
         raise BufferError("Invalid line")
 
@@ -235,19 +307,34 @@ class Parser:
     def parseFactor(self) -> Node:
         self.tokens.selectNext()
         if self.tokens.actual.tokenType == TokenTypes.NUMBER:
+            logger.logParse(f"[INFO] [FACTOR] Number found {self.tokens.actual.value}")
             return IntVal(self.tokens.actual)
         elif (
             self.tokens.actual.tokenType in self.levelZeroTokens
             or self.tokens.actual.tokenType == TokenTypes.BOOL_NOT
         ):
+            logger.logParse(f"[INFO] [FACTOR] Unop Found {self.tokens.actual.tokenType}")
             return UnOp(self.tokens.actual, self.parseFactor())
         elif self.tokens.actual.tokenType == TokenTypes.RPAR:
             raise ValueError()
         elif self.tokens.actual.tokenType == TokenTypes.IDENTIFIER:
+            logger.logParse(f"[INFO] [FACTOR] Identifier found {self.tokens.actual.value}")
             if self.tokens.actual.value != "readln":
-                return IdentifierVal(
-                    Token(TokenTypes.IDENTIFIER, self.tokens.actual.value)
-                )
+                identifier = self.tokens.actual
+                self.tokens.selectNext()
+                if self.tokens.actual.tokenType == TokenTypes.LPAR:
+                    func = FuncCall(identifier)
+                    logger.logParse(f"[INFO] [FACTOR] Funccall")
+                    while self.tokens.actual.tokenType != TokenTypes.RPAR:
+                        logger.logParse(f"[INFO] [FACTOR] Add param to func")
+                        func.addArgument(self.parseOrExpr())
+                    return func
+                else:
+                    self.tokens.actual = identifier
+                    self.tokens.position -= len(self.tokens.actual.value)
+                    return IdentifierVal(
+                        Token(TokenTypes.IDENTIFIER, identifier.value)
+                    )
             self.tokens.selectNext()
             if self.tokens.actual.tokenType != TokenTypes.LPAR:
                 raise BufferError()
@@ -256,13 +343,18 @@ class Parser:
                 raise BufferError()
             return Readln(self.tokens.actual)
         elif self.tokens.actual.tokenType == TokenTypes.LPAR:
+            logger.logParse(f"[INFO] [FACTOR] LPAREN")
             self.openPars += 1
             root = self.parseOrExpr()
+            logger.logParse(f"[INFO] [FACTOR] Factor {root}")
             if self.tokens.actual.tokenType == TokenTypes.RPAR:
+                logger.logParse(f"[INFO] [FACTOR] RPAREN")
                 self.openPars -= 1
         elif self.tokens.actual.tokenType == TokenTypes.STRING:
+            logger.logParse(f"[INFO] [FACTOR] String found {self.tokens.actual.value}")
             return StrVal(self.tokens.actual)
         elif self.tokens.actual.tokenType == TokenTypes.BOOLEAN:
+            logger.logParse(f"[INFO] [FACTOR] Bool found {self.tokens.actual.value}")
             return BoolVal(self.tokens.actual)
         else:
             raise BufferError(
@@ -272,13 +364,14 @@ class Parser:
 
     def run(self) -> NoReturn:
         self.tokens.selectNext()
-        block = self.parseBlock()
+        block = self.parseFuncDefBlock()
         self.tokens.selectNext()
         if (
             self.openPars == 0
             and self.openBlocks == 0
             and self.tokens.actual.tokenType == TokenTypes.EOF
         ):
+            block.addNode(FuncCall(Token(TokenTypes.IDENTIFIER, "main")))
             block.evaluate(self.symbols)
         else:
             raise BufferError(
@@ -288,8 +381,9 @@ class Parser:
 
 if __name__ == "__main__":
     f = sys.argv[1]
-    # f = "test.c"
+    # f = "test1.c"
     with open(f, "r") as tmp:
         sentence = tmp.read()
-    parser = Parser(sentence)
+    logger = Logger('debug.log')
+    parser = Parser(sentence, logger)
     parser.run()

@@ -1,5 +1,8 @@
 from typing import NoReturn, Dict, Union
 from tokens import Token
+from logger import Logger
+
+LOGGER = Logger("debug.log")
 
 
 class SymbolTable:
@@ -11,6 +14,7 @@ class SymbolTable:
 
     def getVariable(self, variable: str) -> Token:
         if variable in self.table:
+            LOGGER.logParse(f"[DEBUG] [SYMBOLTABLE] [GET] Getting {variable}. {self}")
             return self.table[variable]["value"], self.table[variable]["varType"]
         raise KeyError(f"No variable named {variable}")
 
@@ -19,6 +23,7 @@ class SymbolTable:
     ) -> NoReturn:
         if variable in self.table:
             raise NameError(f"Variable {variable} already declared")
+        LOGGER.logParse(f"[DEBUG] [SYMBOLTABLE] [DECLARE] Declaring {variable} of type {varType} to scope. {self}")
         self.table[variable] = {"value": value, "varType": varType}
 
     def setVariable(
@@ -33,4 +38,5 @@ class SymbolTable:
                 value = int(value)
             else:
                 raise TypeError()
+        LOGGER.logParse(f"[DEBUG] [SYMBOLTABLE] [SET] Setting {variable} of value {value} to scope. {self}")
         self.table[variable]["value"] = value

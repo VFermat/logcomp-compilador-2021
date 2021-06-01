@@ -1,9 +1,11 @@
 from typing import List, NoReturn, Union
 from tokens import Token, TokenTypes
 from symbolTable import SymbolTable
+from logger import Logger
 
 
 VARTYPES = Union[str, bool, int]
+LOGGER = Logger('debug.log')
 
 
 class Node:
@@ -17,18 +19,89 @@ class Node:
 
 class Block(Node):
 
-    child: List[Node]
+    children: List[Node]
 
     def __init__(self, value: Token):
         self.value = value
-        self.child = []
+        self.children = []
 
     def evaluate(self, table: SymbolTable):
-        for node in self.child:
+        for node in self.children:
+            if type(node) is Return:
+                return node.evaluate(table)
             node.evaluate(table)
 
     def addNode(self, node: Node):
-        self.child.append(node)
+        self.children.append(node)
+
+
+class FuncDef(Node):
+
+    def __init__(self, value):
+        super().__init__(value)
+        self.arguments = []
+        self.statements = []
+
+    def addArgument(self, arg: Node) -> NoReturn:
+        LOGGER.logParse(f"[DEBUG] [NODE] [FUNCDEF] Adding argument {arg} to func {self.value.value}")
+        self.arguments.append(arg)
+
+    def addStatements(self, statement: Node):
+        LOGGER.logParse(f"[DEBUG] [NODE] [FUNCDEF] Adding statement {statement} to func {self.value.value}")
+        self.statements.append(statement)
+
+    def evaluate(self, table: SymbolTable):
+        LOGGER.logParse(f"[INFO] [NODE] [FUNCDEF] Declaring {self.value.value} to symboltable")
+        table.declareVariable(self.value.value, self, "FUNCTION")
+        return table
+
+
+class FuncCall(Node):
+
+    arguments: List[Node] = []
+
+    def __init__(self, value):
+        super().__init__(value)
+        self.children = [self.arguments]
+
+    def addArgument(self, arg: Node) -> NoReturn:
+        self.arguments.append(arg)
+        self.children[0] = self.arguments
+
+    def evaluate(self, table: SymbolTable):
+        LOGGER.logParse(f"[INFO] [NODE] [FUNCCALL] Calling {self.value.value}.")
+        func, tmp = table.getVariable(self.value.value)
+        if tmp != 'FUNCTION':
+            raise TypeError(f"Invalid function {self.value.value}")
+        scopeTable = SymbolTable()
+        for variable, value in table.table.items():
+            if value['varType'] == 'FUNCTION':
+                scopeTable.table[variable] = value
+                LOGGER.logParse(f"[INFO] [NODE] [FUNCCALL] Adding {variable} to scopeTable of funccall {self.value.value}")
+        
+        argResults = []
+        for arg in self.arguments:
+            argResults.append(arg.evaluate(table))
+
+        if len(argResults) == len(func.arguments):
+            for arg, argResult in zip(func.arguments, argResults):
+                scopeTable.declareVariable(arg.value.value, argResult[0], argResult[1])
+    
+        for statement in func.statements:
+            LOGGER.logParse(f"[DEBUG] [NODE] [FUNCCALL] Running statement {statement}")
+            ret = statement.evaluate(scopeTable)
+            if ret is not None:
+                return ret
+
+
+class Return(Node):
+
+    def __init__(self, value, child: Node):
+        super().__init__(value)
+        self.child = child
+
+    def evaluate(self, table):
+        return self.child.evaluate(table)
 
 
 class Assigner(Node):
@@ -39,12 +112,15 @@ class Assigner(Node):
         self.value = value
         self.child = child
         self.varType = varType
+        self.children = [self.value, self.child, self.varType]
 
     def evaluate(self, table: SymbolTable) -> SymbolTable:
         value = self.child.evaluate(table)
         if self.varType:
+            LOGGER.logParse(f"[INFO] [NODE] [ASSIGNER] Declaring {self.value.value}")
             table.declareVariable(self.value.value, value[0], self.varType)
         else:
+            LOGGER.logParse(f"[INFO] [NODE] [ASSIGNER] Setting {self.value.value}")
             table.setVariable(self.value.value, value[0], value[1])
         return table
 
@@ -56,8 +132,10 @@ class Print(Node):
     def __init__(self, value: Token, child: Node):
         super().__init__(value)
         self.child = child
+        self.children = [child]
 
     def evaluate(self, table: SymbolTable):
+        LOGGER.logParse(f"[INFO] [NODE] [PRINT] Print")
         print(self.child.evaluate(table)[0])
 
 
@@ -70,6 +148,7 @@ class While(Node):
         super().__init__(value)
         self.condition = condition
         self.command = command
+        self.children = [self.condition, self.command]
 
     def evaluate(self, table):
         while self.condition.evaluate(table)[0]:
@@ -86,10 +165,12 @@ class If(Node):
         super().__init__(value)
         self.condition = condition
         self.commandTrue = commandTrue
+        self.children = [self.condition, self.commandTrue]
         self.commandFalse = None
 
     def setCommandFalse(self, commandFalse: Node) -> NoReturn:
         self.commandFalse = commandFalse
+        self.children.append(self.commandFalse)
 
     def evaluate(self, table):
         if self.condition.value.tokenType == TokenTypes.STRING:
@@ -176,6 +257,7 @@ class UnOp(Node):
     def __init__(self, value: Token, child: Node):
         super().__init__(value)
         self.child = child
+        self.children = [self.child]
 
     def evaluate(self, table: SymbolTable):
         child = self.child.evaluate(table)

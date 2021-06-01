@@ -25,6 +25,7 @@ class TokenTypes(Enum):
     BOOL_NOT = 20
     STRING = 21
     BOOLEAN = 22
+    COMMA = 23
 
 
 class Token:
