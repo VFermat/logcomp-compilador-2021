@@ -1,5 +1,8 @@
 from tokens import Token, TokenTypes
+from logger import Logger
 
+
+LOGGER  = Logger('./out/tokens.log')
 
 class Tokenizer:
 
@@ -10,6 +13,7 @@ class Tokenizer:
     def __init__(self, origin: str):
         self.origin = origin
         self.position = 0
+        self.line = 1
         self.actual = None
 
     def selectNext(self) -> Token:
@@ -125,8 +129,14 @@ class Tokenizer:
                 else:
                     token = Token(TokenTypes.IDENTIFIER, temp)
                 break
+            elif char == '\n':
+                self.line += 1
+                i += 1
+                # else:
+                #     i += 1
             else:
                 i += 1
         self.actual = token
+        LOGGER.logParse(f"[DEBUG] [TOKEN] {token.tokenType} {token.value}. At position: {self.position} line: {self.line}")
         self.position = i + 1
         return token

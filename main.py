@@ -29,7 +29,7 @@ from symbolTable import SymbolTable
 class PrePro:
     def filter(self, text: str) -> str:
         text = text.strip()
-        text = text.replace("\n", " ")
+        # text = text.replace("\n", " ")
         position: int = text.find("/*")
         while position != -1:
             end_position: int = text[position:].find("*/")
@@ -107,10 +107,10 @@ class Parser:
             self.tokens.selectNext()
             if (
                 self.tokens.actual.value == "else"
-                and block.child[-1].value.value == "if"
+                and block.children[-1].value.value == "if"
             ):
                 logger.logParse(f"[INFO] [BLOCK] Find Else. Setting command false")
-                block.child[-1].setCommandFalse(self.parseCommand())
+                block.children[-1].setCommandFalse(self.parseCommand())
                 self.tokens.selectNext()
         self.openBlocks -= 1
         logger.logParse(f"[INFO] [BLOCK] Ending block")
@@ -142,9 +142,10 @@ class Parser:
                     )
                 value = self.parseOrExpr()
                 logger.logParse(f"[INFO] [COMMAND] Println. {value}")
+                self.tokens.selectNext()
                 if self.tokens.actual.tokenType != TokenTypes.RPAR:
                     raise BufferError(
-                        f"Invalid Token. {identifier.value} should be followed by RPAR token `)`"
+                        f"Invalid Token. {identifier.value} should be followed by RPAR token `)`."
                     )
                 self.tokens.selectNext()
                 if self.tokens.actual.tokenType != TokenTypes.SEPARATOR:
@@ -160,6 +161,7 @@ class Parser:
                     )
                 condition = self.parseOrExpr()
                 logger.logParse(f"[INFO] [COMMAND] While Condition {condition}")
+                # self.tokens.selectNext()
                 if self.tokens.actual.tokenType != TokenTypes.RPAR:
                     raise BufferError(
                         f"Invalid Token. {identifier.value} should be followed by RPAR token `)`"
@@ -176,9 +178,12 @@ class Parser:
                     )
                 condition = self.parseOrExpr()
                 logger.logParse(f"[INFO] [COMMAND] If Condition {condition}")
+                self.tokens.selectNext()
+                # print(self.tokens.actual.tokenType)
+                # print(self.tokens.actual.tokenType)
                 if self.tokens.actual.tokenType != TokenTypes.RPAR:
                     raise BufferError(
-                        f"Invalid Token. {identifier.value} should be followed by RPAR token `)`"
+                        f"Invalid Token. {identifier.value} should be followed by RPAR token `)` {self.tokens.actual.tokenType}"
                     )
                 self.tokens.selectNext()
                 command = self.parseCommand()
@@ -347,6 +352,7 @@ class Parser:
             self.openPars += 1
             root = self.parseOrExpr()
             logger.logParse(f"[INFO] [FACTOR] Factor {root}")
+            self.tokens.selectNext()
             if self.tokens.actual.tokenType == TokenTypes.RPAR:
                 logger.logParse(f"[INFO] [FACTOR] RPAREN")
                 self.openPars -= 1

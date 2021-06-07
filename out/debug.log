@@ -3,29 +3,69 @@
 [INFO] [COMMAND] Block Found
 [INFO] [BLOCK] Starting block
 [INFO] [COMMAND] Parsing new command.
-[INFO] [FACTOR] Number found 1
-[INFO] [FACTOR] Number found 1
-[INFO] [COMMAND] Println. <nodes.BinOp object at 0x7ff1b92a0b90>
-[INFO] [BLOCK] New command parsed. Adding to Block. <class 'nodes.Print'>
+[INFO] [COMMAND] Variable declaration. int x1
+[INFO] [BLOCK] New command parsed. Adding to Block. <class 'nodes.Assigner'>
 [INFO] [COMMAND] Parsing new command.
-[INFO] [FACTOR] Number found 21
-[INFO] [FACTOR] Number found 21
-[INFO] [COMMAND] Println. <nodes.BinOp object at 0x7ff1b92a0dd0>
-[INFO] [BLOCK] New command parsed. Adding to Block. <class 'nodes.Print'>
+[INFO] [COMMAND] Variable declaration. int y2
+[INFO] [BLOCK] New command parsed. Adding to Block. <class 'nodes.Assigner'>
 [INFO] [COMMAND] Parsing new command.
-[INFO] [FACTOR] Number found 83
-[INFO] [FACTOR] Number found 41
-[INFO] [COMMAND] Println. <nodes.BinOp object at 0x7ff1b92a90d0>
+[INFO] [COMMAND] Variable declaration. int z_final
+[INFO] [BLOCK] New command parsed. Adding to Block. <class 'nodes.Assigner'>
+[INFO] [COMMAND] Parsing new command.
+[INFO] [COMMAND] Identifier
+[INFO] [FACTOR] Number found 8
+[INFO] [COMMAND] Assignment <nodes.Assigner object at 0x7fd2588a7190>
+[INFO] [BLOCK] New command parsed. Adding to Block. <class 'nodes.Assigner'>
+[INFO] [COMMAND] Parsing new command.
+[INFO] [COMMAND] Identifier
+[INFO] [FACTOR] Number found 5
+[INFO] [COMMAND] Assignment <nodes.Assigner object at 0x7fd2588a7350>
+[INFO] [BLOCK] New command parsed. Adding to Block. <class 'nodes.Assigner'>
+[INFO] [COMMAND] Parsing new command.
+[INFO] [COMMAND] Identifier
+[INFO] [FACTOR] LPAREN
+[INFO] [FACTOR] Identifier found x1
+[INFO] [FACTOR] Identifier found y2
+[INFO] [FACTOR] Factor <nodes.BinOp object at 0x7fd2588a74d0>
+[INFO] [FACTOR] RPAREN
+[INFO] [FACTOR] Unop Found TokenTypes.MINUS
+[INFO] [FACTOR] Unop Found TokenTypes.MINUS
+[INFO] [FACTOR] Unop Found TokenTypes.MINUS
+[INFO] [FACTOR] Number found 37
+[INFO] [COMMAND] Assignment <nodes.Assigner object at 0x7fd2588a7710>
+[INFO] [BLOCK] New command parsed. Adding to Block. <class 'nodes.Assigner'>
+[INFO] [COMMAND] Parsing new command.
+[INFO] [COMMAND] Empty Line
+[INFO] [BLOCK] New command parsed. Adding to Block. <class 'nodes.NoOp'>
+[INFO] [COMMAND] Parsing new command.
+[INFO] [COMMAND] Empty Line
+[INFO] [BLOCK] New command parsed. Adding to Block. <class 'nodes.NoOp'>
+[INFO] [COMMAND] Parsing new command.
+[INFO] [FACTOR] Identifier found z_final
+[INFO] [COMMAND] Println. <nodes.IdentifierVal object at 0x7fd2588a7b50>
 [INFO] [BLOCK] New command parsed. Adding to Block. <class 'nodes.Print'>
 [INFO] [BLOCK] Ending block
-[DEBUG] [NODE] [FUNCDEF] Adding statement <nodes.Block object at 0x7ff1b92a0ad0> to func main
+[DEBUG] [NODE] [FUNCDEF] Adding statement <nodes.Block object at 0x7fd25889fc10> to func main
 [INFO] [FUNCBLOCK] End funcblock main
 [INFO] [NODE] [FUNCDEF] Declaring main to symboltable
-[DEBUG] [SYMBOLTABLE] [DECLARE] Declaring main of type FUNCTION to scope. <symbolTable.SymbolTable object at 0x7ff1b92a0950>
+[DEBUG] [SYMBOLTABLE] [DECLARE] Declaring main of type FUNCTION to scope. <symbolTable.SymbolTable object at 0x7fd25889fa50>
 [INFO] [NODE] [FUNCCALL] Calling main.
-[DEBUG] [SYMBOLTABLE] [GET] Getting main. <symbolTable.SymbolTable object at 0x7ff1b92a0950>
+[DEBUG] [SYMBOLTABLE] [GET] Getting main. <symbolTable.SymbolTable object at 0x7fd25889fa50>
 [INFO] [NODE] [FUNCCALL] Adding main to scopeTable of funccall main
-[DEBUG] [NODE] [FUNCCALL] Running statement <nodes.Block object at 0x7ff1b92a0ad0>
+[DEBUG] [NODE] [FUNCCALL] Running statement <nodes.Block object at 0x7fd25889fc10>
+[INFO] [NODE] [ASSIGNER] Declaring x1
+[DEBUG] [SYMBOLTABLE] [DECLARE] Declaring x1 of type int to scope. <symbolTable.SymbolTable object at 0x7fd2588a7bd0>
+[INFO] [NODE] [ASSIGNER] Declaring y2
+[DEBUG] [SYMBOLTABLE] [DECLARE] Declaring y2 of type int to scope. <symbolTable.SymbolTable object at 0x7fd2588a7bd0>
+[INFO] [NODE] [ASSIGNER] Declaring z_final
+[DEBUG] [SYMBOLTABLE] [DECLARE] Declaring z_final of type int to scope. <symbolTable.SymbolTable object at 0x7fd2588a7bd0>
+[INFO] [NODE] [ASSIGNER] Setting x1
+[DEBUG] [SYMBOLTABLE] [SET] Setting x1 of value 8 to scope. <symbolTable.SymbolTable object at 0x7fd2588a7bd0>
+[INFO] [NODE] [ASSIGNER] Setting y2
+[DEBUG] [SYMBOLTABLE] [SET] Setting y2 of value 5 to scope. <symbolTable.SymbolTable object at 0x7fd2588a7bd0>
+[DEBUG] [SYMBOLTABLE] [GET] Getting x1. <symbolTable.SymbolTable object at 0x7fd2588a7bd0>
+[DEBUG] [SYMBOLTABLE] [GET] Getting y2. <symbolTable.SymbolTable object at 0x7fd2588a7bd0>
+[INFO] [NODE] [ASSIGNER] Setting z_final
+[DEBUG] [SYMBOLTABLE] [SET] Setting z_final of value -481 to scope. <symbolTable.SymbolTable object at 0x7fd2588a7bd0>
 [INFO] [NODE] [PRINT] Print
-[INFO] [NODE] [PRINT] Print
-[INFO] [NODE] [PRINT] Print
+[DEBUG] [SYMBOLTABLE] [GET] Getting z_final. <symbolTable.SymbolTable object at 0x7fd2588a7bd0>
