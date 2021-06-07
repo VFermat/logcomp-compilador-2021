@@ -384,6 +384,6 @@ if __name__ == "__main__":
     # f = "test1.c"
     with open(f, "r") as tmp:
         sentence = tmp.read()
-    logger = Logger('debug.log')
+    logger = Logger('./out/debug.log')
     parser = Parser(sentence, logger)
     parser.run()

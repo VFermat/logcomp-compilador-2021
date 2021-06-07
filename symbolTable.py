@@ -2,7 +2,7 @@ from typing import NoReturn, Dict, Union
 from tokens import Token
 from logger import Logger
 
-LOGGER = Logger("debug.log")
+LOGGER = Logger("./out/debug.log")
 
 
 class SymbolTable:

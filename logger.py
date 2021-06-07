@@ -9,7 +9,7 @@ class Logger():
     def _cleanFiles(self):
         with open(self.logfile, 'w') as f:
             f.write('')
-        with open('ast.log', 'w') as f:
+        with open('./out/ast.log', 'w') as f:
             f.write('')
 
     def logParse(self, msg):
@@ -18,7 +18,7 @@ class Logger():
             f.write('\n')
 
     def logAst(self, ast, depth: int = 0):
-        with open('ast.log', 'a') as f:
+        with open('./out/ast.log', 'a') as f:
             tabs = " "*depth
             f.write(f'{tabs}[Node {ast} ')
             if type(ast) is not list:

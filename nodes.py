@@ -5,7 +5,7 @@ from logger import Logger
 
 
 VARTYPES = Union[str, bool, int]
-LOGGER = Logger('debug.log')
+LOGGER = Logger('./out/debug.log')
 
 
 class Node:

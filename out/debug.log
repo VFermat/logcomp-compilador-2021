@@ -1,0 +1,31 @@
+[INFO] [FUNCBLOCK] Starting funcblock of name main
+[INFO] [COMMAND] Parsing new command.
+[INFO] [COMMAND] Block Found
+[INFO] [BLOCK] Starting block
+[INFO] [COMMAND] Parsing new command.
+[INFO] [FACTOR] Number found 1
+[INFO] [FACTOR] Number found 1
+[INFO] [COMMAND] Println. <nodes.BinOp object at 0x7ff1b92a0b90>
+[INFO] [BLOCK] New command parsed. Adding to Block. <class 'nodes.Print'>
+[INFO] [COMMAND] Parsing new command.
+[INFO] [FACTOR] Number found 21
+[INFO] [FACTOR] Number found 21
+[INFO] [COMMAND] Println. <nodes.BinOp object at 0x7ff1b92a0dd0>
+[INFO] [BLOCK] New command parsed. Adding to Block. <class 'nodes.Print'>
+[INFO] [COMMAND] Parsing new command.
+[INFO] [FACTOR] Number found 83
+[INFO] [FACTOR] Number found 41
+[INFO] [COMMAND] Println. <nodes.BinOp object at 0x7ff1b92a90d0>
+[INFO] [BLOCK] New command parsed. Adding to Block. <class 'nodes.Print'>
+[INFO] [BLOCK] Ending block
+[DEBUG] [NODE] [FUNCDEF] Adding statement <nodes.Block object at 0x7ff1b92a0ad0> to func main
+[INFO] [FUNCBLOCK] End funcblock main
+[INFO] [NODE] [FUNCDEF] Declaring main to symboltable
+[DEBUG] [SYMBOLTABLE] [DECLARE] Declaring main of type FUNCTION to scope. <symbolTable.SymbolTable object at 0x7ff1b92a0950>
+[INFO] [NODE] [FUNCCALL] Calling main.
+[DEBUG] [SYMBOLTABLE] [GET] Getting main. <symbolTable.SymbolTable object at 0x7ff1b92a0950>
+[INFO] [NODE] [FUNCCALL] Adding main to scopeTable of funccall main
+[DEBUG] [NODE] [FUNCCALL] Running statement <nodes.Block object at 0x7ff1b92a0ad0>
+[INFO] [NODE] [PRINT] Print
+[INFO] [NODE] [PRINT] Print
+[INFO] [NODE] [PRINT] Print
