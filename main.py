@@ -150,10 +150,9 @@ class Parser:
                     )
                 value = self.parseOrExpr()
                 logger.logParse(f"[INFO] [COMMAND] Println. {value}")
-                self.tokens.selectNext()
                 if self.tokens.actual.tokenType != TokenTypes.RPAR:
                     raise BufferError(
-                        f"Invalid Token. {identifier.value} should be followed by RPAR token `)`."
+                        f"Invalid Token. {identifier.value} should be followed by RPAR token `)`. {self.tokens.line}"
                     )
                 self.tokens.selectNext()
                 if self.tokens.actual.tokenType != TokenTypes.SEPARATOR:
@@ -314,7 +313,9 @@ class Parser:
         root = BinOp(Token(TokenTypes.EOF, 0), node, NoOp(Token(TokenTypes.EOF, 0)))
         logger.logParse(f"[DEBUG] [TERM] [PRESELECTNEXT] {self.tokens.actual.value}")
         self.tokens.selectNext()
-        logger.logParse(f"[DEBUG] [TERM] [PREWHILE] {self.tokens.actual.value}")
+        logger.logParse(
+            f"[DEBUG] [TERM] [PREWHILE] {self.tokens.actual.value} {self.tokens.actual.tokenType}"
+        )
         while self.tokens.actual.tokenType in self.levelOneTokens:
             root.setValue(self.tokens.actual)
             root.setRight(self.parseFactor())
@@ -356,8 +357,11 @@ class Parser:
                         func.addArgument(self.parseOrExpr())
                     return func
                 else:
-                    self.tokens.actual = identifier
+                    logger.logParse(
+                        f"[DEBUG] [FACTOR] Identifier Len {len(self.tokens.actual.value)}"
+                    )
                     self.tokens.position -= len(self.tokens.actual.value)
+                    self.tokens.actual = identifier
                     return IdentifierVal(Token(TokenTypes.IDENTIFIER, identifier.value))
             self.tokens.selectNext()
             if self.tokens.actual.tokenType != TokenTypes.LPAR:
