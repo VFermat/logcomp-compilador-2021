@@ -2,7 +2,8 @@ from tokens import Token, TokenTypes
 from logger import Logger
 
 
-LOGGER  = Logger('./out/tokens.log')
+LOGGER = Logger("./out/tokens.log")
+
 
 class Tokenizer:
 
@@ -25,25 +26,25 @@ class Tokenizer:
         while i < len(self.origin):
             char = self.origin[i]
             if char == "+":
-                token = Token(TokenTypes.PLUS, 1)
+                token = Token(TokenTypes.PLUS, "+")
                 break
             elif char == ",":
-                token = Token(TokenTypes.COMMA, 1)
+                token = Token(TokenTypes.COMMA, ",")
                 break
             elif char == "-":
-                token = Token(TokenTypes.MINUS, 1)
+                token = Token(TokenTypes.MINUS, "-")
                 break
             elif char == "/":
-                token = Token(TokenTypes.DIVIDER, 1)
+                token = Token(TokenTypes.DIVIDER, "/")
                 break
             elif char == "*":
-                token = Token(TokenTypes.MULTIPLIER, 1)
+                token = Token(TokenTypes.MULTIPLIER, "*")
                 break
             elif char == ">":
-                token = Token(TokenTypes.BOOL_GT, 1)
+                token = Token(TokenTypes.BOOL_GT, ">")
                 break
             elif char == "<":
-                token = Token(TokenTypes.BOOL_LT, 1)
+                token = Token(TokenTypes.BOOL_LT, "<")
                 break
             elif char == "=":
                 if self.origin[i + 1] == "=":
@@ -129,14 +130,14 @@ class Tokenizer:
                 else:
                     token = Token(TokenTypes.IDENTIFIER, temp)
                 break
-            elif char == '\n':
+            elif char == "\n":
                 self.line += 1
                 i += 1
-                # else:
-                #     i += 1
             else:
                 i += 1
         self.actual = token
-        LOGGER.logParse(f"[DEBUG] [TOKEN] {token.tokenType} {token.value}. At position: {self.position} line: {self.line}")
+        LOGGER.logParse(
+            f"[DEBUG] [TOKEN] {token.tokenType} {token.value}. At position: {self.position} line: {self.line}"
+        )
         self.position = i + 1
         return token
