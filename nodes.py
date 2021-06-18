@@ -29,7 +29,7 @@ class Block(Node):
             if type(node) is Return:
                 return node.evaluate(table)
             result = node.evaluate(table)
-            if result is not None:
+            if result is not None and type(node) is If:
                 return result
 
     def addNode(self, node: Node):
