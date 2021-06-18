@@ -93,6 +93,8 @@ class FuncCall(Node):
         if len(argResults) == len(func.arguments):
             for arg, argResult in zip(func.arguments, argResults):
                 scopeTable.setVariable(arg.value.value, argResult[0], argResult[1])
+        else:
+            raise ValueError()
 
         for statement in func.statements:
             LOGGER.logParse(f"[DEBUG] [NODE] [FUNCCALL] Running statement {statement}")
