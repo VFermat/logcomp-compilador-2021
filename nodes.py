@@ -3,9 +3,8 @@ from tokens import Token, TokenTypes
 from symbolTable import SymbolTable
 from logger import Logger
 
-
 VARTYPES = Union[str, bool, int]
-LOGGER = Logger('./out/debug.log')
+LOGGER = Logger("./out/debug.log")
 
 
 class Node:
@@ -29,39 +28,43 @@ class Block(Node):
         for node in self.children:
             if type(node) is Return:
                 return node.evaluate(table)
-            node.evaluate(table)
+            result = node.evaluate(table)
+            if result is not None:
+                return result
 
     def addNode(self, node: Node):
         self.children.append(node)
 
 
 class FuncDef(Node):
-
     def __init__(self, value):
         super().__init__(value)
         self.arguments = []
         self.statements = []
 
     def addArgument(self, arg: Node) -> NoReturn:
-        LOGGER.logParse(f"[DEBUG] [NODE] [FUNCDEF] Adding argument {arg} to func {self.value.value}")
+        LOGGER.logParse(
+            f"[DEBUG] [NODE] [FUNCDEF] Adding argument {arg} to func {self.value.value}"
+        )
         self.arguments.append(arg)
 
     def addStatements(self, statement: Node):
-        LOGGER.logParse(f"[DEBUG] [NODE] [FUNCDEF] Adding statement {statement} to func {self.value.value}")
+        LOGGER.logParse(
+            f"[DEBUG] [NODE] [FUNCDEF] Adding statement {statement} to func {self.value.value}"
+        )
         self.statements.append(statement)
 
     def evaluate(self, table: SymbolTable):
-        LOGGER.logParse(f"[INFO] [NODE] [FUNCDEF] Declaring {self.value.value} to symboltable")
+        LOGGER.logParse(
+            f"[INFO] [NODE] [FUNCDEF] Declaring {self.value.value} to symboltable"
+        )
         table.declareVariable(self.value.value, self, "FUNCTION")
-        return table
 
 
 class FuncCall(Node):
-
-    arguments: List[Node] = []
-
     def __init__(self, value):
         super().__init__(value)
+        self.arguments = []
         self.children = [self.arguments]
 
     def addArgument(self, arg: Node) -> NoReturn:
@@ -69,16 +72,17 @@ class FuncCall(Node):
         self.children[0] = self.arguments
 
     def evaluate(self, table: SymbolTable):
-        LOGGER.logParse(f"[INFO] [NODE] [FUNCCALL] Calling {self.value.value}.")
         func, tmp = table.getVariable(self.value.value)
-        if tmp != 'FUNCTION':
+        if tmp != "FUNCTION":
             raise TypeError(f"Invalid function {self.value.value}")
         scopeTable = SymbolTable()
         for variable, value in table.table.items():
-            if value['varType'] == 'FUNCTION':
+            if value["varType"] == "FUNCTION":
                 scopeTable.table[variable] = value
-                LOGGER.logParse(f"[INFO] [NODE] [FUNCCALL] Adding {variable} to scopeTable of funccall {self.value.value}")
-        
+                LOGGER.logParse(
+                    f"[INFO] [NODE] [FUNCCALL] Adding {variable} to scopeTable of funccall {self.value.value}"
+                )
+
         argResults = []
         for arg in self.arguments:
             argResults.append(arg.evaluate(table))
@@ -86,7 +90,7 @@ class FuncCall(Node):
         if len(argResults) == len(func.arguments):
             for arg, argResult in zip(func.arguments, argResults):
                 scopeTable.declareVariable(arg.value.value, argResult[0], argResult[1])
-    
+
         for statement in func.statements:
             LOGGER.logParse(f"[DEBUG] [NODE] [FUNCCALL] Running statement {statement}")
             ret = statement.evaluate(scopeTable)
@@ -95,7 +99,6 @@ class FuncCall(Node):
 
 
 class Return(Node):
-
     def __init__(self, value, child: Node):
         super().__init__(value)
         self.child = child
@@ -122,7 +125,6 @@ class Assigner(Node):
         else:
             LOGGER.logParse(f"[INFO] [NODE] [ASSIGNER] Setting {self.value.value}")
             table.setVariable(self.value.value, value[0], value[1])
-        return table
 
 
 class Print(Node):
@@ -188,9 +190,9 @@ class Readln(Node):
     def evaluate(self, table) -> Token:
         value = input()
         if value.isnumeric():
-            return  int(value), "int"
+            return int(value), "int"
         else:
-            return  value, "string"
+            return value, "string"
 
 
 class BinOp(Node):
