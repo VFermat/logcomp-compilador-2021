@@ -83,13 +83,16 @@ class FuncCall(Node):
                     f"[INFO] [NODE] [FUNCCALL] Adding {variable} to scopeTable of funccall {self.value.value}"
                 )
 
+        for arg in func.arguments:
+            scopeTable.declareVariable(arg.value.value, 0, arg.varType)
+
         argResults = []
         for arg in self.arguments:
             argResults.append(arg.evaluate(table))
 
         if len(argResults) == len(func.arguments):
             for arg, argResult in zip(func.arguments, argResults):
-                scopeTable.declareVariable(arg.value.value, argResult[0], argResult[1])
+                scopeTable.setVariable(arg.value.value, argResult[0], argResult[1])
 
         for statement in func.statements:
             LOGGER.logParse(f"[DEBUG] [NODE] [FUNCCALL] Running statement {statement}")
